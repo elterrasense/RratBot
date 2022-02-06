@@ -21,8 +21,8 @@ public class RateThingListenerImpl implements RateThingListener {
                 if (chance < 10) {
                     messageCreateEvent.getChannel().sendMessage("I rate " + matcher.group(1) + " 11/10");
                 } else {
-                    //Rating from 0 to 10 using Math.random
-                    int rating = (int) (Math.random()*(10))+ 1;
+                    //Rating from 0 to 10 using hashing
+                    int rating = 1 + (matcher.group(1).hashCode() % 10);
                     messageCreateEvent.getChannel()
                             .sendMessage(
                                     "I rate " + matcher.group(1) + " " + rating + "/10");
