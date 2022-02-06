@@ -21,7 +21,7 @@ public class RateListenerImpl implements RateListener {
                 int rating = (int) Math.floor(Math.random() * 100) + 1;
                 messageCreateEvent.getChannel()
                         .sendMessage(
-                            messageCreateEvent.getMessageAuthor().getDisplayName() + " is " + rating + "/100 " + matcher.group(1));
+                            messageCreateEvent.getMessageAuthor().getDisplayName() + " is " + rating + "% " + matcher.group(1));
             } else {
                 //Send help syntax message
                 messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use `!rate [word]`?");
