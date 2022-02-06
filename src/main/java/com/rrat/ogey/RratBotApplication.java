@@ -12,6 +12,7 @@ import org.springframework.core.env.Environment;
 @SpringBootApplication
 public class RratBotApplication {
 
+	//Set token as environmental variable
 	@Autowired
 	private Environment env;
 
@@ -20,9 +21,18 @@ public class RratBotApplication {
 	}
 	@Bean
 	@ConfigurationProperties(value = "discord-api")
+	//Initial configuration and authentication
 	public DiscordApi discordApi(){
 		String token = env.getProperty("TOKEN");
+		//Set token and check login and join
 		DiscordApi api = new DiscordApiBuilder().setToken(token).setAllNonPrivilegedIntents().login().join();
+		//Listener
+		api.addMessageCreateListener(event -> {
+			if (event.getMessageContent().equals("!ping")){
+				event.getChannel().sendMessage("Pong!");
+			}
+		});
+
 		return api;
 	}
 }
