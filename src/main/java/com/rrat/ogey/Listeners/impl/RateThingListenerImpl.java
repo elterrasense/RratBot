@@ -31,7 +31,8 @@ public class RateThingListenerImpl implements RateThingListener {
                 }
             } else {
                 //Send help syntax message
-                messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use `!rate [thing]`?");
+                messageCreateEvent.getChannel()
+                        .sendMessage("Incorrect syntax, are you trying to use `!rate [thing]`?");
             }
         }
     }

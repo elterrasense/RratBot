@@ -18,7 +18,7 @@ public class RateListenerImpl implements RateListener {
         if (messageCreateEvent.getMessageContent().startsWith("!rateself")) {
             Matcher matcher = pattern.matcher(messageCreateEvent.getMessageContent());
             if (matcher.matches()) {
-                //Combine the hashes of username and input to achieve a random number between 0 and 100
+                //Combine the hashes of username and input to achieve a random number between 1 and 100
                 int rating = 1 + Math.abs(Objects.hash(messageCreateEvent.getMessageAuthor().getDisplayName() ,
                         matcher.group(1))) % 100;
                 //Send message
