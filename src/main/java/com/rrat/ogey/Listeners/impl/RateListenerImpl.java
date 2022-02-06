@@ -4,6 +4,7 @@ import com.rrat.ogey.Listeners.RateListener;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,14 +18,18 @@ public class RateListenerImpl implements RateListener {
         if (messageCreateEvent.getMessageContent().startsWith("!rateself")) {
             Matcher matcher = pattern.matcher(messageCreateEvent.getMessageContent());
             if (matcher.matches()) {
-                //Rating from 0 to 100 using Math.random
-                int rating = (int) Math.floor(Math.random() * 100) + 1;
+                //Combine the hashes of username and input to achieve a random number between 1 and 100
+                int rating = 1 + Math.abs(Objects.hash(messageCreateEvent.getMessageAuthor().getDisplayName() ,
+                        matcher.group(1))) % 100;
+                //Send message
                 messageCreateEvent.getChannel()
                         .sendMessage(
-                            messageCreateEvent.getMessageAuthor().getDisplayName() + " is " + rating + "% " + matcher.group(1));
+                            messageCreateEvent.getMessageAuthor().getDisplayName() + " is " + rating + "% "
+                                    + matcher.group(1));
             } else {
                 //Send help syntax message
-                messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use `!rateself [word]`?");
+                messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use " +
+                        "`!rateself [word]`?");
             }
         }
     }
