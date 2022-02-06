@@ -9,11 +9,11 @@ import java.util.regex.Pattern;
 @Component
 public class RateThingListenerImpl implements RateThingListener {
     //Pattern finder
-    private final static Pattern pattern = Pattern.compile("!rate (.+)");
+    private final static Pattern pattern = Pattern.compile("!rating (.+)");
 
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
-        if (messageCreateEvent.getMessageContent().startsWith("!rate")) {
+        if (messageCreateEvent.getMessageContent().startsWith("!rating")) {
             Matcher matcher = pattern.matcher(messageCreateEvent.getMessageContent());
             if (matcher.matches()) {
                 //Small chance of giving 11/10
