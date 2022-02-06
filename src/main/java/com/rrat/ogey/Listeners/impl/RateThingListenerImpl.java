@@ -22,7 +22,9 @@ public class RateThingListenerImpl implements RateThingListener {
                     messageCreateEvent.getChannel().sendMessage("I rate " + matcher.group(1) + " 11/10");
                 } else {
                     //Rating from 0 to 10 using hashing
-                    int rating = 1 + (matcher.group(1).hashCode() % 10);
+                    int rating = 1 + (Math.abs(matcher.group(1).hashCode()) % 10);
+
+                    //Send message
                     messageCreateEvent.getChannel()
                             .sendMessage(
                                     "I rate " + matcher.group(1) + " " + rating + "/10");

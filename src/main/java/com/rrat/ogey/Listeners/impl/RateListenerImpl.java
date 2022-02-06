@@ -17,14 +17,18 @@ public class RateListenerImpl implements RateListener {
         if (messageCreateEvent.getMessageContent().startsWith("!rateself")) {
             Matcher matcher = pattern.matcher(messageCreateEvent.getMessageContent());
             if (matcher.matches()) {
-                //Rating from 0 to 100 using Math.random
-                int rating = (int) Math.floor(Math.random() * 100) + 1;
+                //Combine the hashes of username and input to achieve a random number from 0 to 100
+                int rating = 1 + ((Math.abs(matcher.group(1).hashCode())) +
+                        Math.abs(messageCreateEvent.getMessageAuthor().getDisplayName().hashCode()) %100);
+                //Send message
                 messageCreateEvent.getChannel()
                         .sendMessage(
-                            messageCreateEvent.getMessageAuthor().getDisplayName() + " is " + rating + "% " + matcher.group(1));
+                            messageCreateEvent.getMessageAuthor().getDisplayName() + " is " + rating + "% "
+                                    + matcher.group(1));
             } else {
                 //Send help syntax message
-                messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use `!rateself [word]`?");
+                messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use " +
+                        "`!rateself [word]`?");
             }
         }
     }
