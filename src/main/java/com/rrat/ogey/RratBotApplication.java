@@ -1,5 +1,7 @@
 package com.rrat.ogey;
 
+import com.rrat.ogey.Listeners.PingListener;
+import com.rrat.ogey.Listeners.RateListener;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,10 @@ public class RratBotApplication {
 	@Autowired
 	private Environment env;
 
+	//Ping
+	@Autowired
+	private PingListener pingListener;
+
 	public static void main(String[] args) {
 		SpringApplication.run(RratBotApplication.class, args);
 	}
@@ -26,12 +32,9 @@ public class RratBotApplication {
 		String token = env.getProperty("TOKEN");
 		//Set token and check login and join
 		DiscordApi api = new DiscordApiBuilder().setToken(token).setAllNonPrivilegedIntents().login().join();
-		//Listener
-		api.addMessageCreateListener(event -> {
-			if (event.getMessageContent().equals("!ping")){
-				event.getChannel().sendMessage("Pong!");
-			}
-		});
+
+		//Listeners
+		api.addMessageCreateListener(pingListener);
 
 		return api;
 	}
