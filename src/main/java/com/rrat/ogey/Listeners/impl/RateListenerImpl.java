@@ -10,11 +10,11 @@ import java.util.regex.Pattern;
 @Component
 public class RateListenerImpl implements RateListener {
     //Pattern finder
-    private final static Pattern pattern = Pattern.compile("!rate (\\w+)");
+    private final static Pattern pattern = Pattern.compile("!rateself (.+)");
 
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
-        if (messageCreateEvent.getMessageContent().startsWith("!rate")) {
+        if (messageCreateEvent.getMessageContent().startsWith("!rateself")) {
             Matcher matcher = pattern.matcher(messageCreateEvent.getMessageContent());
             if (matcher.matches()) {
                 //Rating from 0 to 100 using Math.random
@@ -24,7 +24,7 @@ public class RateListenerImpl implements RateListener {
                             messageCreateEvent.getMessageAuthor().getDisplayName() + " is " + rating + "% " + matcher.group(1));
             } else {
                 //Send help syntax message
-                messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use `!rate [word]`?");
+                messageCreateEvent.getChannel().sendMessage("Incorrect syntax, are you trying to use `!rateself [word]`?");
             }
         }
     }
