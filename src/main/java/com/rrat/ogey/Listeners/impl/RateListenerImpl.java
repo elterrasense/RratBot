@@ -4,6 +4,7 @@ import com.rrat.ogey.Listeners.RateListener;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,9 +18,9 @@ public class RateListenerImpl implements RateListener {
         if (messageCreateEvent.getMessageContent().startsWith("!rateself")) {
             Matcher matcher = pattern.matcher(messageCreateEvent.getMessageContent());
             if (matcher.matches()) {
-                //Combine the hashes of username and input to achieve a random number from 0 to 100
-                int rating = 1 + ((Math.abs(matcher.group(1).hashCode())) +
-                        Math.abs(messageCreateEvent.getMessageAuthor().getDisplayName().hashCode()) %100);
+                //Combine the hashes of username and input to achieve a random number between 0 and 100
+                int rating = 1 + Math.abs(Objects.hash(messageCreateEvent.getMessageAuthor().getDisplayName() ,
+                        matcher.group(1))) % 100;
                 //Send message
                 messageCreateEvent.getChannel()
                         .sendMessage(
