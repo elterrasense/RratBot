@@ -2,6 +2,7 @@ package com.rrat.ogey;
 
 import com.rrat.ogey.Listeners.PingListener;
 import com.rrat.ogey.Listeners.RateListener;
+import com.rrat.ogey.Listeners.RateThingListener;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,10 @@ public class RratBotApplication {
 	@Autowired
 	private RateListener rateListener;
 
+	//Rate [thing]
+	@Autowired
+	private RateThingListener rateThingListener;
+
 	public static void main(String[] args) {
 		SpringApplication.run(RratBotApplication.class, args);
 	}
@@ -40,6 +45,7 @@ public class RratBotApplication {
 		//Listeners
 		api.addMessageCreateListener(pingListener);
 		api.addMessageCreateListener(rateListener);
+		api.addMessageCreateListener(rateThingListener);
 
 		return api;
 	}
