@@ -22,6 +22,10 @@ public class RratBotApplication {
 	@Autowired
 	private PingListener pingListener;
 
+	//Rate [word]
+	@Autowired
+	private RateListener rateListener;
+
 	public static void main(String[] args) {
 		SpringApplication.run(RratBotApplication.class, args);
 	}
@@ -35,6 +39,7 @@ public class RratBotApplication {
 
 		//Listeners
 		api.addMessageCreateListener(pingListener);
+		api.addMessageCreateListener(rateListener);
 
 		return api;
 	}
