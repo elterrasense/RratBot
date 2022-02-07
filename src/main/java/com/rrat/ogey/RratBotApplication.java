@@ -1,5 +1,6 @@
 package com.rrat.ogey;
 
+import com.rrat.ogey.Listeners.HelpListener;
 import com.rrat.ogey.Listeners.PingListener;
 import com.rrat.ogey.Listeners.RateListener;
 import com.rrat.ogey.Listeners.RateThingListener;
@@ -18,6 +19,10 @@ public class RratBotApplication {
 	//Set token as environmental variable
 	@Autowired
 	private Environment env;
+
+	//Help
+	@Autowired
+	private HelpListener helpListener;
 
 	//Ping
 	@Autowired
@@ -43,6 +48,7 @@ public class RratBotApplication {
 		DiscordApi api = new DiscordApiBuilder().setToken(token).setAllNonPrivilegedIntents().login().join();
 
 		//Listeners
+		api.addMessageCreateListener(helpListener);
 		api.addMessageCreateListener(pingListener);
 		api.addMessageCreateListener(rateListener);
 		api.addMessageCreateListener(rateThingListener);

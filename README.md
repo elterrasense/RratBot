@@ -2,6 +2,8 @@
 Repository for Rrat Bot
 
 # Currently available commands
+!help = Sends you here
+
 !ping = Pong!
 
 !rateself [thing] = Rates you with anything you input based on percentaje (e.j. "Terra is 100% awoo")
