@@ -1,10 +1,9 @@
-package com.rrat.ogey.Listeners.impl;
+package com.rrat.ogey.listeners.impl;
 
-import com.rrat.ogey.Listeners.KeywordListener;
+import com.rrat.ogey.listeners.KeywordListener;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

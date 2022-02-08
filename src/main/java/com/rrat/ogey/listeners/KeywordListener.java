@@ -1,4 +1,4 @@
-package com.rrat.ogey.Listeners;
+package com.rrat.ogey.listeners;
 
 import org.javacord.api.listener.message.MessageCreateListener;
 
