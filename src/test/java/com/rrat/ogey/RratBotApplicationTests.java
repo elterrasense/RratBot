@@ -8,6 +8,7 @@ class RratBotApplicationTests {
 
 	@Test
 	void contextLoads() {
+
 	}
 
 }
