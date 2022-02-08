@@ -49,7 +49,7 @@ public class KeywordListenerImpl implements KeywordListener {
             //Ogey rrat
             Matcher matcherOgey = ogeyrrat.matcher(messageCreateEvent.getMessageContent());
             if (matcherOgey.find()) {
-                if (messageCreateEvent.getMessageContent().contains("ogey")) {
+                if (messageCreateEvent.getMessageContent().toLowerCase().contains("ogey")) {
                     messageCreateEvent.getChannel()
                             .sendMessage(
                                     "rrat");
