@@ -1,5 +1,6 @@
 package com.rrat.ogey.listeners;
 
+import com.rrat.ogey.listeners.impl.CockRateCommandExecutor;
 import com.rrat.ogey.listeners.impl.RateCommandExecutor;
 import com.rrat.ogey.listeners.impl.RateThingCommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
@@ -24,18 +25,18 @@ public class CommandDispatcherListener implements MessageCreateListener {
     @Autowired
     private RateThingCommandExecutor rateThing;
 
+    @Autowired
+    private CockRateCommandExecutor cockRate;
+
     @PostConstruct
     private void postConstruct() {
         commands.put("rateself", rateSelf);
         commands.put("rate", rateThing);
-        commands.put("ping", (event, args) -> {
-            event.getChannel().sendMessage("Pong!");
-        });
-        commands.put("help", (event, args) -> {
-            event.getChannel().sendMessage(
-                    "You can find the currently available commands here: " +
-                            "<https://github.com/elterrasense/RratBot/blob/main/README.md#currently-available-commands>");
-        });
+        commands.put("cockrate", cockRate);
+        commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
+        commands.put("help", (event, args) -> event.getChannel().sendMessage(
+                "You can find the currently available commands here: " +
+                        "<https://github.com/elterrasense/RratBot/blob/main/README.md#currently-available-commands>"));
     }
 
     @Override
