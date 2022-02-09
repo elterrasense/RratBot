@@ -23,8 +23,8 @@ public class CockRateCommandExecutor implements CommandExecutor {
                         + df.format(lengthInch) + " inches long");
             } else {
                 //Variation if values are negative
-                event.getChannel().sendMessage(arguments + "'s" + " cock is so short it became a vagina! It's" + df.format(lengthCm) + " cm/"
-                        + df.format(lengthInch) + " inches deep");
+                event.getChannel().sendMessage(arguments + "'s" + " cock is so short it became a vagina! It's"
+                        + df.format(lengthCm) + " cm/" + df.format(lengthInch) + " inches deep");
             }
         } else {
             event.getChannel().sendMessage("Incorrect syntax, are you trying to use `!cockrate [thing]`?");
