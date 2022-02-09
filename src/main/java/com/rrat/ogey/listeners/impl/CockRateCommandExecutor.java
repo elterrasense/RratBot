@@ -9,7 +9,6 @@ import java.util.Random;
 
 @Component
 public class CockRateCommandExecutor implements CommandExecutor {
-    //Formatting the double like this as I don't know if .sendMessage supports %.2f, and I can't bother to find out now
     private static final DecimalFormat df = new DecimalFormat("0.000");
 
     @Override
