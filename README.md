@@ -10,4 +10,6 @@ Repository for Rrat Bot
 
 !rate [thing] = Rates anything you input on a scale from 0 to 10 (and maybe more)
 
+!cockrate [thing] = Gives the exact cock's length of anything you input
+
 The bot can also react to certain keywords which I won't list as it's funnier to find out by oneself.
