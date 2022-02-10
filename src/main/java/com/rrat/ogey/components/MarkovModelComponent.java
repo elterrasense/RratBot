@@ -140,7 +140,7 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
     private void updateModel(String text) {
         model.update(tokenize(text));
         Instant now = Instant.now();
-        if (Duration.between(lastWriteDate, now).get(ChronoUnit.MINUTES) > 5) {
+        if (Duration.between(lastWriteDate, now).toMinutes() > 5) {
             lastWriteDate = now;
             savePersistentMarkov();
         }
