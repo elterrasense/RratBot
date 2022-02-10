@@ -5,28 +5,89 @@ import com.rrat.ogey.model.MarkovModel;
 import org.javacord.api.entity.message.MessageAuthor;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 @Component
 public class MarkovModelComponent implements MessageCreateListener, CommandExecutor {
+
+    private static final Logger logger = LoggerFactory.getLogger(MarkovModelComponent.class);
 
     private static final Pattern pt_token_split = Pattern.compile("\\b");
     private static final Pattern pt_word = Pattern.compile("\\w+");
     private static final Pattern pt_punctuation = Pattern.compile("^[.,;:!?']$");
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final MarkovModel model = MarkovModel.withNGramLength(2);
+    private Instant lastWriteDate = Instant.now();
+    private MarkovModel model;
+
+    @Autowired
+    private Environment env;
+
+    @PostConstruct
+    private void postConstruct() {
+        this.model = Objects.requireNonNullElseGet(
+                loadPersistentMarkov(),
+                () -> MarkovModel.withNGramLength(2));
+    }
 
     @PreDestroy
     private void preDestroy() {
         executor.shutdownNow();
+    }
+
+    private @Nullable MarkovModel loadPersistentMarkov() {
+        Path file = getModelObjectFilepath();
+        if (Files.exists(file)) {
+            try (FileInputStream is = new FileInputStream(file.toFile())) {
+                ObjectInputStream ois = new ObjectInputStream(is);
+                return (MarkovModel) ois.readObject();
+            } catch (ClassNotFoundException | IOException exception) {
+                logger.error(String.format("Unable to load persistent Markov chain '%s'", file), exception);
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    private void savePersistentMarkov() {
+        Path file = getModelObjectFilepath();
+        try (FileOutputStream os = new FileOutputStream(file.toFile())) {
+            ObjectOutputStream ois = new ObjectOutputStream(os);
+            ois.writeObject(model);
+        } catch (IOException exception) {
+            logger.error(String.format("Unable to save persistent Markov chain to '%s'", file), exception);
+        }
+    }
+
+    private Path getModelObjectFilepath() {
+        String customFilepath = env.getProperty("markov.persistentObjectFilepath");
+        if (customFilepath != null) {
+            return Paths.get(customFilepath);
+        } else {
+            return Paths.get(System.getProperty("user.home"), ".markov-chain.obj");
+        }
     }
 
     @Override
@@ -71,9 +132,17 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
     public void onMessageCreate(MessageCreateEvent ev) {
         MessageAuthor author = ev.getMessageAuthor();
         if (!author.isBotUser()) {
-            String context = ev.getMessageContent();
-            executor.execute(() ->
-                    model.update(tokenize(context)));
+            String content = ev.getMessageContent();
+            executor.execute(() -> updateModel(content));
+        }
+    }
+
+    private void updateModel(String text) {
+        model.update(tokenize(text));
+        Instant now = Instant.now();
+        if (Duration.between(lastWriteDate, now).get(ChronoUnit.MINUTES) > 5) {
+            lastWriteDate = now;
+            savePersistentMarkov();
         }
     }
 
@@ -85,7 +154,7 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
                         .filter(item -> pt_word.matcher(item).matches() || pt_punctuation.matcher(item).matches())
                         .toList();
 
-        return tokenizeEmotes(tokens);
+        return filterTokens(tokens);
     }
 
     /** Primarily remove urls from text since it will mess up the tokenizer */
@@ -93,15 +162,15 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
         return text.replaceAll("http.*?\\s", "");
     }
 
-    /** Detect ':', 'identifier', ':' token sequence and replace it with single emote token */
-    private List<String> tokenizeEmotes(List<String> tokens) {
+    /** Detect ':', 'identifier', ':' token sequence and replace it with single emote token, convert the rest to lowercase */
+    private List<String> filterTokens(List<String> tokens) {
         ArrayList<String> condensed = new ArrayList<>();
         for (int j = 0; j < tokens.size(); j++) {
             if (isEmoteTokenSequence(tokens, j)) {
                 condensed.add(":" + tokens.get(1 + j) + ":");
                 j = j + 2;
             } else {
-                condensed.add(tokens.get(j));
+                condensed.add(tokens.get(j).toLowerCase());
             }
         }
         return condensed;

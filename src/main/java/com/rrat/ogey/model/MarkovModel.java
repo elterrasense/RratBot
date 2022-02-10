@@ -1,10 +1,13 @@
 package com.rrat.ogey.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.*;
 import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
 
-public final class MarkovModel {
+public final class MarkovModel implements Serializable {
+    @Serial private static final long serialVersionUID = 1L;
 
     public static MarkovModel withNGramLength(int length) {
         return new MarkovModel(length);
@@ -76,11 +79,15 @@ public final class MarkovModel {
     }
 
     private Optional<NGram> pickNGram(RandomGenerator rng) {
-        Set<NGram> ngrams = counters.keySet();
-        return ngrams.stream()
-                .filter(ng -> ng.word)
-                .skip(rng.nextInt(wordNgrams))
-                .findFirst();
+        if (wordNgrams <= 0) {
+            return Optional.empty();
+        } else {
+            Set<NGram> ngrams = counters.keySet();
+            return ngrams.stream()
+                    .filter(ng -> ng.word)
+                    .skip(rng.nextInt(wordNgrams))
+                    .findFirst();
+        }
     }
 
     private Optional<NGram> pickNGram(String token, RandomGenerator rng) {
@@ -116,7 +123,8 @@ public final class MarkovModel {
         this.ngramLength = ngramLength;
     }
 
-    private final static class NGram {
+    private final static class NGram implements Serializable {
+        @Serial private static final long serialVersionUID = 1L;
 
         private static final Pattern punctuation = Pattern.compile("^\\p{Punct}$");
 
@@ -162,7 +170,8 @@ public final class MarkovModel {
         }
     }
 
-    private final static class NGramCounter {
+    private final static class NGramCounter implements Serializable {
+        @Serial private static final long serialVersionUID = 1L;
 
         private final NGram self;
         private final LinkedHashMap<String, Integer> outcomes = new LinkedHashMap<>(2);
