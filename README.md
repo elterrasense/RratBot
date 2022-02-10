@@ -12,4 +12,6 @@ Repository for Rrat Bot
 
 !cockrate [thing] = Gives the exact cock's length of anything you input
 
+!8ball [yes/no question] = Answers your question based on reliable sources (me)
+
 The bot can also react to certain keywords which I won't list as it's funnier to find out by oneself.

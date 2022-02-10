@@ -14,6 +14,8 @@ public class KeywordListenerImpl implements KeywordListener {
     private final static Pattern ayame = Pattern.compile("(?i)(^|\s)(ayame is a whore|ayame whore|whore)(\s|$)");
     private final static Pattern nabe = Pattern.compile("(?i)(^|\s)(nabe)(\s|$)");
     private final static Pattern ogeyrrat = Pattern.compile("(?i)(^|\s)(ogey|rrat)(\s|$)");
+    private final static Pattern man = Pattern.compile("(?i)(^)(man)($)");
+    private final static Pattern nabeLore = Pattern.compile("(?i)(^)(!nabe)($)");
 
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
@@ -46,6 +48,14 @@ public class KeywordListenerImpl implements KeywordListener {
                                 "<:towasip:906605142214860840>");
             }
 
+            //nabeLore
+            Matcher matcherNabeLore = nabeLore.matcher(messageCreateEvent.getMessageContent());
+            if (matcherNabeLore.find()) {
+                messageCreateEvent.getChannel()
+                        .sendMessage(
+                                "https://i.postimg.cc/mZCy4DNW/unknown.png");
+            }
+
             //Ogey rrat
             Matcher matcherOgey = ogeyrrat.matcher(messageCreateEvent.getMessageContent());
             if (matcherOgey.find()) {
@@ -58,6 +68,12 @@ public class KeywordListenerImpl implements KeywordListener {
                             .sendMessage(
                                     "ogey");
                 }
+            }
+
+            //man
+            Matcher matcherMan = man.matcher(messageCreateEvent.getMessageContent());
+            if (matcherMan.find()) {
+                messageCreateEvent.getChannel().sendMessage(":horse:");
             }
         }
     }
