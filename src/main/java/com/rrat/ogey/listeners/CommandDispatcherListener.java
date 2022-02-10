@@ -1,6 +1,7 @@
 package com.rrat.ogey.listeners;
 
 import com.rrat.ogey.listeners.impl.CockRateCommandExecutor;
+import com.rrat.ogey.listeners.impl.EightBallCommandExecutor;
 import com.rrat.ogey.listeners.impl.RateCommandExecutor;
 import com.rrat.ogey.listeners.impl.RateThingCommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
@@ -28,11 +29,15 @@ public class CommandDispatcherListener implements MessageCreateListener {
     @Autowired
     private CockRateCommandExecutor cockRate;
 
+    @Autowired
+    private EightBallCommandExecutor eightBall;
+
     @PostConstruct
     private void postConstruct() {
         commands.put("rateself", rateSelf);
         commands.put("rate", rateThing);
         commands.put("cockrate", cockRate);
+        commands.put("8ball", eightBall);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(
                 "You can find the currently available commands here: " +
