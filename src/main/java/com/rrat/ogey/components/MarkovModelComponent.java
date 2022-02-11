@@ -20,12 +20,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
 
 @Component
@@ -35,7 +37,7 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
 
     private static final Pattern pt_token_split = Pattern.compile("\\b");
     private static final Pattern pt_word = Pattern.compile("\\w+");
-    private static final Pattern pt_punctuation = Pattern.compile("^[.,;:!?']$");
+    private static final Pattern pt_punctuation = Pattern.compile("^[>.,;:!?'\n]$");
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private Instant lastWriteDate = Instant.now();
@@ -93,7 +95,10 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
     @Override
     public void execute(MessageCreateEvent ev, String arguments) {
         if (arguments != null) {
-            List<String> args = tokenize(arguments);
+            List<String> args = tokenize(arguments)
+                    .stream()
+                    .filter(pt_word.asPredicate())
+                    .toList();
             switch (args.size()) {
                 case 0 -> {
                     spitFacts(ev, null);
@@ -102,7 +107,8 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
                     spitFacts(ev, args.get(0));
                 }
                 default -> {
-                    ev.getChannel().sendMessage("You are asking a lot.");
+                    RandomGenerator rng = ThreadLocalRandom.current();
+                    spitFacts(ev, args.get(rng.nextInt(args.size())));
                 }
             }
         } else {
@@ -149,9 +155,14 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
     private List<String> tokenize(String text) {
         List<String> tokens =
                 pt_token_split.splitAsStream(sanitize(text))
-                        .map(String::trim)
+                        .map(item -> {
+                            if (item.contains("\n")) {
+                                return "\n";
+                            } else {
+                                return item.trim();
+                            }
+                        })
                         .filter(item -> !item.isEmpty())
-                        .filter(item -> pt_word.matcher(item).matches() || pt_punctuation.matcher(item).matches())
                         .toList();
 
         return filterTokens(tokens);
@@ -159,27 +170,35 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
 
     /** Primarily remove urls from text since it will mess up the tokenizer */
     private String sanitize(String text) {
-        return text.replaceAll("http.*?\\s", "");
+        return text.replaceAll("http.*?(\\s|$)", "");
     }
 
-    /** Detect ':', 'identifier', ':' token sequence and replace it with single emote token, convert the rest to lowercase */
+    /** Detect */
     private List<String> filterTokens(List<String> tokens) {
-        ArrayList<String> condensed = new ArrayList<>();
+        ArrayList<String> filtered = new ArrayList<>();
         for (int j = 0; j < tokens.size(); j++) {
             if (isEmoteTokenSequence(tokens, j)) {
-                condensed.add(":" + tokens.get(1 + j) + ":");
-                j = j + 2;
+                String emoteName = tokens.get(1 + j);
+                String emoteId = tokens.get(3 + j);
+                filtered.add("<:" + emoteName + ":" + emoteId + ">");
+                j = j + 4;
             } else {
-                condensed.add(tokens.get(j).toLowerCase());
+                String token = tokens.get(j);
+                if (pt_word.matcher(token).matches() || pt_punctuation.matcher(token).matches()) {
+                    filtered.add(token.toLowerCase());
+                }
             }
         }
-        return condensed;
+        return filtered;
     }
 
     private boolean isEmoteTokenSequence(List<String> tokens, int position) {
-        return 2 + position < tokens.size()
-            && ":".equals(tokens.get(position))
-            && ":".equals(tokens.get(2 + position));
+        return 4 + position < tokens.size()
+            && "<:".equals(tokens.get(position))
+            && ":".equals(tokens.get(2 + position))
+            && ">".equals(tokens.get(4 + position))
+            && pt_word.matcher(tokens.get(1 + position)).matches()
+            && Pattern.matches("\\d+", tokens.get(3 + position));
     }
 
     private String gather(List<String> tokens) {
@@ -188,16 +207,45 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
             String token = tokens.get(j);
             if (j == 0) {
                 text.append(token);
-            } else if (pt_punctuation.matcher(token).matches()) {
-                text.append(token);
-                if ("'".equals(token) && 1 + j < tokens.size()) {
+                if (">".equals(token) && hasMore(tokens, j)) {
                     text.append(tokens.get(1 + j));
                     j++;
+                }
+            } else if (pt_punctuation.matcher(token).matches()) {
+                switch (token) {
+                    case "'" -> {
+                        text.append("'");
+                        if (hasMore(tokens, j)) {
+                            text.append(tokens.get(1 + j));
+                            j++;
+                        }
+                    }
+                    case ">" -> {
+                        if (hasMore(tokens, j)) {
+                            text.append("\n>");
+                            text.append(tokens.get(1 + j));
+                            j++;
+                        }
+                    }
+                    case "\n" -> {
+                        if (hasMore(tokens, j)) {
+                            text.append("\n");
+                            text.append(tokens.get(1 + j));
+                            j++;
+                        }
+                    }
+                    default -> {
+                        text.append(token);
+                    }
                 }
             } else {
                 text.append(' ').append(token);
             }
         }
         return text.toString();
+    }
+
+    private boolean hasMore(List<String> tokens, int j) {
+        return 1 + j < tokens.size();
     }
 }

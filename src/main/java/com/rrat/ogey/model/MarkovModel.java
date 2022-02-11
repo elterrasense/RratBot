@@ -126,7 +126,7 @@ public final class MarkovModel implements Serializable {
     private final static class NGram implements Serializable {
         @Serial private static final long serialVersionUID = 1L;
 
-        private static final Pattern punctuation = Pattern.compile("^\\p{Punct}$");
+        private static final Pattern punctuation = Pattern.compile("^[\\n\\p{Punct}]$");
 
         private final int hash;
         private final String[] tokens;
