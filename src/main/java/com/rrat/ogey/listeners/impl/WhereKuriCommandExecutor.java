@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class WhereKuriCommandExecutor implements CommandExecutor {
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
-        if (event.getMessageContent().equals("whereKuri")) {
+        if (arguments == null) {
             String[] responses = {
                     "Empty answer for random",
                     "Spain",
