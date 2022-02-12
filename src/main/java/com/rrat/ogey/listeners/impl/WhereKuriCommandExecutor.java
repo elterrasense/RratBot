@@ -31,12 +31,13 @@ public class WhereKuriCommandExecutor implements CommandExecutor {
                     "Pyongyang",
                     "Venezuela",
                     "Serbia",
-                    "Romania"};
+                    "Romania"
+            };
             //Random number
             int response = (int) (Math.random() * (21) + 1);
             event.getChannel().sendMessage(responses[response]);
         } else {
-            event.getChannel().sendMessage("Incorrect syntax, are you trying to use `!whereKuri`?");
+            event.getChannel().sendMessage("Incorrect syntax, are you trying to use `!wherekuri`?");
         }
     }
 }
