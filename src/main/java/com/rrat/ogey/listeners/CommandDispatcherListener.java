@@ -1,10 +1,7 @@
 package com.rrat.ogey.listeners;
 
 import com.rrat.ogey.components.MarkovModelComponent;
-import com.rrat.ogey.listeners.impl.CockRateCommandExecutor;
-import com.rrat.ogey.listeners.impl.EightBallCommandExecutor;
-import com.rrat.ogey.listeners.impl.RateCommandExecutor;
-import com.rrat.ogey.listeners.impl.RateThingCommandExecutor;
+import com.rrat.ogey.listeners.impl.*;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +31,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     private EightBallCommandExecutor eightBall;
 
     @Autowired
+    private WhereKuriCommandExecutor whereKuri;
+
+    @Autowired
     private MarkovModelComponent markov;
 
     @PostConstruct
@@ -42,6 +42,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("rate", rateThing);
         commands.put("cockrate", cockRate);
         commands.put("8ball", eightBall);
+        commands.put("whereKuri", whereKuri);
         commands.put("facts", markov);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(
