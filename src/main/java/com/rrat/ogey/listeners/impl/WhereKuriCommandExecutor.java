@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class WhereKuriCommandExecutor implements CommandExecutor {
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
-        if (arguments != null && !"".equals(arguments)) {
+        if (event.getMessageContent().equals("whereKuri")) {
             String[] responses = {
                     "Empty answer for random",
                     "Spain",
@@ -19,13 +19,24 @@ public class WhereKuriCommandExecutor implements CommandExecutor {
                     "United States",
                     "Madagascar",
                     "Germany",
-                    "Russia"};
+                    "Russia",
+                    "Somalia",
+                    "Iraq",
+                    "Tienanmen",
+                    "Kosovo",
+                    "Israel",
+                    "Turkey",
+                    "Poland",
+                    "Cambodia",
+                    "Pyongyang",
+                    "Venezuela",
+                    "Serbia",
+                    "Romania"};
             //Random number
-            int response = (int) (Math.random() * (9) + 1);
+            int response = (int) (Math.random() * (21) + 1);
             event.getChannel().sendMessage(responses[response]);
         } else {
-            event.getChannel().sendMessage("Incorrect syntax, are you trying to use `!8ball " +
-                    "[yes/no question]`?");
+            event.getChannel().sendMessage("Incorrect syntax, are you trying to use `!whereKuri`?");
         }
     }
 }
