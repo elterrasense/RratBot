@@ -18,15 +18,11 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
 import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
 
@@ -39,8 +35,8 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
     private static final Pattern pt_word = Pattern.compile("\\w+");
     private static final Pattern pt_punctuation = Pattern.compile("^[>.,;:!?'\n]$");
 
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Instant lastWriteDate = Instant.now();
     private MarkovModel model;
 
     @Autowired
@@ -48,14 +44,21 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
 
     @PostConstruct
     private void postConstruct() {
+
         this.model = Objects.requireNonNullElseGet(
                 loadPersistentMarkov(),
                 () -> MarkovModel.withNGramLength(2));
+
+        this.scheduler.scheduleAtFixedRate(
+                () -> executor.execute(this::savePersistentMarkov),
+                5,
+                5, TimeUnit.MINUTES);
     }
 
     @PreDestroy
     private void preDestroy() {
         executor.shutdownNow();
+        scheduler.shutdownNow();
     }
 
     private @Nullable MarkovModel loadPersistentMarkov() {
@@ -139,16 +142,9 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
         MessageAuthor author = ev.getMessageAuthor();
         if (!author.isBotUser()) {
             String content = ev.getMessageContent();
-            executor.execute(() -> updateModel(content));
-        }
-    }
-
-    private void updateModel(String text) {
-        model.update(tokenize(text));
-        Instant now = Instant.now();
-        if (Duration.between(lastWriteDate, now).toMinutes() > 5) {
-            lastWriteDate = now;
-            savePersistentMarkov();
+            if (!content.startsWith("!")) {
+                executor.execute(() -> model.update(tokenize(content)));
+            }
         }
     }
 
@@ -173,7 +169,10 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
         return text.replaceAll("http.*?(\\s|$)", "");
     }
 
-    /** Detect */
+    /**
+     * Find emote token sequences and replace them with a single emote token.
+     * Also remove non-word tokens as well as not-supported punctuation tokens.
+     */
     private List<String> filterTokens(List<String> tokens) {
         ArrayList<String> filtered = new ArrayList<>();
         for (int j = 0; j < tokens.size(); j++) {
@@ -201,6 +200,11 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
             && Pattern.matches("\\d+", tokens.get(3 + position));
     }
 
+    /**
+     * Builds a post from text tokens, primarily follows these rules:
+     * word should have a space before it with an exception to {@code '}, {@code >}, and newline characters;
+     * {@code >} character always is preceded by newline to replicate green-text posts
+     */
     private String gather(List<String> tokens) {
         StringBuilder text = new StringBuilder();
         for (int j = 0; j < tokens.size(); j++) {
