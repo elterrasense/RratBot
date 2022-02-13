@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.rrat</groupId>
 	<artifactId>ogey</artifactId>
-	<version>1.4.2</version>
+	<version>1.5</version>
 	<name>RratBot</name>
 	<description>Discord bot for Rrat</description>
 	<properties>
