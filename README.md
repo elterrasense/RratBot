@@ -17,4 +17,6 @@ Repository for Rrat Bot
 !facts [keyword] = Gives a response based on a keyword utilizing a Markov model that reads every text
 message it has ever seen
 
+!caption [sentence] + (image) = Adds the sentence as a caption to the image.
+
 The bot can also react to certain keywords which I won't list as it's funnier to find out by oneself.
