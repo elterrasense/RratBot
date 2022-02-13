@@ -34,6 +34,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     private WhereKuriCommandExecutor whereKuri;
 
     @Autowired
+    private MikuriMomentCommandExecutor mikuriMoment;
+    
+    @Autowired
     private AddCaptionCommandExecutor captionImg;
 
     @Autowired
@@ -46,6 +49,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("cockrate", cockRate);
         commands.put("8ball", eightBall);
         commands.put("wherekuri", whereKuri);
+        commands.put("kurimoment", mikuriMoment);
         commands.put("caption", captionImg);
         commands.put("facts", markov);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
