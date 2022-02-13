@@ -46,7 +46,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("cockrate", cockRate);
         commands.put("8ball", eightBall);
         commands.put("wherekuri", whereKuri);
-        commands.put("mikurimoment", mikuriMoment);
+        commands.put("kurimoment", mikuriMoment);
         commands.put("facts", markov);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(
