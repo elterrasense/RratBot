@@ -35,6 +35,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
 
     @Autowired
     private MikuriMomentCommandExecutor mikuriMoment;
+    
+    @Autowired
+    private AddCaptionCommandExecutor captionImg;
 
     @Autowired
     private MarkovModelComponent markov;
@@ -47,6 +50,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("8ball", eightBall);
         commands.put("wherekuri", whereKuri);
         commands.put("kurimoment", mikuriMoment);
+        commands.put("caption", captionImg);
         commands.put("facts", markov);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(

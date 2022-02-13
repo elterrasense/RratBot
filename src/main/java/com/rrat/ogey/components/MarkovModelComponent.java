@@ -1,7 +1,11 @@
 package com.rrat.ogey.components;
 
 import com.rrat.ogey.listeners.CommandExecutor;
+import com.rrat.ogey.model.AnnotateTokenizer;
+import com.rrat.ogey.model.AnnotatedToken;
+import com.rrat.ogey.model.AnnotatedTokens;
 import com.rrat.ogey.model.MarkovModel;
+import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.MessageAuthor;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
@@ -18,25 +22,21 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.random.RandomGenerator;
-import java.util.regex.Pattern;
 
 @Component
 public class MarkovModelComponent implements MessageCreateListener, CommandExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkovModelComponent.class);
 
-    private static final Pattern pt_token_split = Pattern.compile("\\b");
-    private static final Pattern pt_word = Pattern.compile("\\w+");
-    private static final Pattern pt_punctuation = Pattern.compile("^[>.,;:!?'\n]$");
-
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final AnnotateTokenizer tokenizer = AnnotateTokenizer.create();
+
     private MarkovModel model;
 
     @Autowired
@@ -98,43 +98,43 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
     @Override
     public void execute(MessageCreateEvent ev, String arguments) {
         if (arguments != null) {
-            List<String> args = tokenize(arguments)
-                    .stream()
-                    .filter(pt_word.asPredicate())
-                    .toList();
-            switch (args.size()) {
-                case 0 -> {
-                    spitFacts(ev, null);
-                }
-                case 1 -> {
-                    spitFacts(ev, args.get(0));
-                }
-                default -> {
-                    RandomGenerator rng = ThreadLocalRandom.current();
-                    spitFacts(ev, args.get(rng.nextInt(args.size())));
-                }
-            }
+            spitFacts(ev, AnnotatedTokens.listWords(tokenizer.tokenize(arguments)), arguments);
         } else {
-            spitFacts(ev, null);
+            spitFacts(ev, Collections.emptyList(), null);
         }
     }
 
-    private void spitFacts(MessageCreateEvent ev, String token) {
-        executor.execute(() -> {
-            final Optional<List<String>> result;
-            if (token != null) {
-                result = model.generate(token, ThreadLocalRandom.current());
-            } else {
-                result = model.generate(ThreadLocalRandom.current());
-            }
-            if (result.isPresent()) {
-                ev.getChannel().sendMessage(gather(result.get()));
-            } else if (token != null) {
-                ev.getChannel().sendMessage("I know nothing about '" + token + "'");
-            } else {
-                ev.getChannel().sendMessage("I know no facts yet");
-            }
-        });
+    private void spitFacts(MessageCreateEvent ev, List<String> words, String query) {
+        switch (words.size()) {
+            case 0 -> executor.execute(() -> {
+                Optional<List<String>> result = model.generate(ThreadLocalRandom.current());
+                if (result.isPresent()) {
+                    ev.getChannel().sendMessage(gather(result.get()));
+                } else {
+                    ev.getChannel().sendMessage("I know no facts yet");
+                }
+            });
+            case 1 -> executor.execute(() -> {
+                String word = words.get(0);
+                Optional<List<String>> result = model.generate(word, ThreadLocalRandom.current());
+                if (result.isPresent()) {
+                    ev.getChannel().sendMessage(gather(result.get()));
+                } else {
+                    ev.getChannel().sendMessage("I know nothing about '" + word + "'");
+                }
+            });
+            default -> executor.execute(() -> {
+                Collections.shuffle(words, ThreadLocalRandom.current());
+                for (String word : words) {
+                    Optional<List<String>> result = model.generate(word, ThreadLocalRandom.current());
+                    if (result.isPresent()) {
+                        ev.getChannel().sendMessage(gather(result.get()));
+                        return;
+                    }
+                }
+                ev.getChannel().sendMessage("I know nothing about '" + query + "'");
+            });
+        }
     }
 
     @Override
@@ -143,61 +143,30 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
         if (!author.isBotUser()) {
             String content = ev.getMessageContent();
             if (!content.startsWith("!")) {
-                executor.execute(() -> model.update(tokenize(content)));
+                List<AnnotatedToken> sequence = filterTokens(ev.getApi(), tokenizer.tokenize(content));
+                executor.execute(() -> model.update(AnnotatedTokens.listAsText(sequence)));
             }
         }
     }
 
-    private List<String> tokenize(String text) {
-        List<String> tokens =
-                pt_token_split.splitAsStream(sanitize(text))
-                        .map(item -> {
-                            if (item.contains("\n")) {
-                                return "\n";
-                            } else {
-                                return item.trim();
-                            }
-                        })
-                        .filter(item -> !item.isEmpty())
-                        .toList();
-
-        return filterTokens(tokens);
-    }
-
-    /** Primarily remove urls from text since it will mess up the tokenizer */
-    private String sanitize(String text) {
-        return text.replaceAll("http.*?(\\s|$)", "");
-    }
-
-    /**
-     * Find emote token sequences and replace them with a single emote token.
-     * Also remove non-word tokens as well as not-supported punctuation tokens.
-     */
-    private List<String> filterTokens(List<String> tokens) {
-        ArrayList<String> filtered = new ArrayList<>();
-        for (int j = 0; j < tokens.size(); j++) {
-            if (isEmoteTokenSequence(tokens, j)) {
-                String emoteName = tokens.get(1 + j);
-                String emoteId = tokens.get(3 + j);
-                filtered.add("<:" + emoteName + ":" + emoteId + ">");
-                j = j + 4;
-            } else {
-                String token = tokens.get(j);
-                if (pt_word.matcher(token).matches() || pt_punctuation.matcher(token).matches()) {
-                    filtered.add(token.toLowerCase());
-                }
-            }
-        }
-        return filtered;
-    }
-
-    private boolean isEmoteTokenSequence(List<String> tokens, int position) {
-        return 4 + position < tokens.size()
-            && "<:".equals(tokens.get(position))
-            && ":".equals(tokens.get(2 + position))
-            && ">".equals(tokens.get(4 + position))
-            && pt_word.matcher(tokens.get(1 + position)).matches()
-            && Pattern.matches("\\d+", tokens.get(3 + position));
+    /** Remove emote unknown to bot because it will not be able to replicate them */
+    private List<AnnotatedToken> filterTokens(DiscordApi discord, List<AnnotatedToken> sequence) {
+        return sequence.stream()
+                .filter(token -> token.handle(new AnnotatedToken.Handler<Boolean>() {
+                    @Override public Boolean onNewlineToken() {
+                        return true;
+                    }
+                    @Override public Boolean onWordToken(String word) {
+                        return true;
+                    }
+                    @Override public Boolean onPunctuationToken(String text) {
+                        return true;
+                    }
+                    @Override public Boolean onEmoteToken(String text, String name, long id) {
+                        return discord.getCustomEmojiById(id).isPresent();
+                    }
+                }))
+                .toList();
     }
 
     /**
@@ -215,7 +184,7 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
                     text.append(tokens.get(1 + j));
                     j++;
                 }
-            } else if (pt_punctuation.matcher(token).matches()) {
+            } else if (AnnotateTokenizer.pt_punctuation.matcher(token).matches()) {
                 switch (token) {
                     case "'" -> {
                         text.append("'");
