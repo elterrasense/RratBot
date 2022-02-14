@@ -52,7 +52,7 @@ public abstract class AnnotatedToken {
     private static final class WordTokenCase extends AnnotatedToken {
         private final String word;
         private WordTokenCase(String word) {
-            this.word = word;
+            this.word = word.toLowerCase();
         }
         @Override public String asText() {
             return word;

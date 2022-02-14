@@ -3,6 +3,7 @@ package com.rrat.ogey;
 import com.rrat.ogey.components.MarkovModelComponent;
 import com.rrat.ogey.listeners.CommandDispatcherListener;
 import com.rrat.ogey.listeners.KeywordListener;
+import com.rrat.ogey.listeners.impl.FactsCommandExecutor;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ public class RratBotApplication {
 	private KeywordListener keywordListener;
 
 	@Autowired
-	private MarkovModelComponent markov;
+	private FactsCommandExecutor facts;
 
 	public static void main(String[] args) {
 		SpringApplication.run(RratBotApplication.class, args);
@@ -43,7 +44,7 @@ public class RratBotApplication {
 		//Listeners
 		api.addMessageCreateListener(commandDispatcherListener);
 		api.addMessageCreateListener(keywordListener);
-		api.addMessageCreateListener(markov);
+		api.addMessageCreateListener(facts);
 
 		return api;
 	}

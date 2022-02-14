@@ -35,12 +35,12 @@ public class CommandDispatcherListener implements MessageCreateListener {
 
     @Autowired
     private MikuriMomentCommandExecutor mikuriMoment;
-    
+
     @Autowired
     private AddCaptionCommandExecutor captionImg;
 
     @Autowired
-    private MarkovModelComponent markov;
+    private FactsCommandExecutor facts;
 
     @PostConstruct
     private void postConstruct() {
@@ -51,7 +51,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("wherekuri", whereKuri);
         commands.put("kurimoment", mikuriMoment);
         commands.put("caption", captionImg);
-        commands.put("facts", markov);
+        commands.put("facts", facts);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(
                 "You can find the currently available commands here: " +

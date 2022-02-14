@@ -1,14 +1,7 @@
 package com.rrat.ogey.components;
 
-import com.rrat.ogey.listeners.CommandExecutor;
 import com.rrat.ogey.model.AnnotateTokenizer;
-import com.rrat.ogey.model.AnnotatedToken;
-import com.rrat.ogey.model.AnnotatedTokens;
 import com.rrat.ogey.model.MarkovModel;
-import org.javacord.api.DiscordApi;
-import org.javacord.api.entity.message.MessageAuthor;
-import org.javacord.api.event.message.MessageCreateEvent;
-import org.javacord.api.listener.message.MessageCreateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +15,14 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 @Component
-public class MarkovModelComponent implements MessageCreateListener, CommandExecutor {
+public class MarkovModelComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkovModelComponent.class);
 
@@ -59,6 +52,35 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
     private void preDestroy() {
         executor.shutdownNow();
         scheduler.shutdownNow();
+    }
+
+    public void updateModelAsync(List<String> textTokens) {
+        executor.execute(() -> model.update(textTokens));
+    }
+
+    public CompletableFuture<Optional<String>> generateSentenceAsync() {
+        Supplier<Optional<String>> supplier = () ->
+                model.generate(ThreadLocalRandom.current()).map(this::gather);
+        return CompletableFuture.supplyAsync(supplier, executor);
+    }
+
+    public CompletableFuture<Optional<String>> generateSentenceAsync(String word) {
+        Supplier<Optional<String>> supplier = () ->
+                model.generate(word, ThreadLocalRandom.current()).map(this::gather);
+        return CompletableFuture.supplyAsync(supplier, executor);
+    }
+
+    public CompletableFuture<Optional<String>> generateFirstPossibleSentenceAsync(List<String> words) {
+        Supplier<Optional<String>> supplier = () -> {
+            for (String word : words) {
+                Optional<List<String>> result = model.generate(word, ThreadLocalRandom.current());
+                if (result.isPresent()) {
+                    return result.map(this::gather);
+                }
+            }
+            return Optional.empty();
+        };
+        return CompletableFuture.supplyAsync(supplier, executor);
     }
 
     private @Nullable MarkovModel loadPersistentMarkov() {
@@ -95,79 +117,6 @@ public class MarkovModelComponent implements MessageCreateListener, CommandExecu
         }
     }
 
-    @Override
-    public void execute(MessageCreateEvent ev, String arguments) {
-        if (arguments != null) {
-            spitFacts(ev, AnnotatedTokens.listWords(tokenizer.tokenize(arguments)), arguments);
-        } else {
-            spitFacts(ev, Collections.emptyList(), null);
-        }
-    }
-
-    private void spitFacts(MessageCreateEvent ev, List<String> words, String query) {
-        switch (words.size()) {
-            case 0 -> executor.execute(() -> {
-                Optional<List<String>> result = model.generate(ThreadLocalRandom.current());
-                if (result.isPresent()) {
-                    ev.getChannel().sendMessage(gather(result.get()));
-                } else {
-                    ev.getChannel().sendMessage("I know no facts yet");
-                }
-            });
-            case 1 -> executor.execute(() -> {
-                String word = words.get(0);
-                Optional<List<String>> result = model.generate(word, ThreadLocalRandom.current());
-                if (result.isPresent()) {
-                    ev.getChannel().sendMessage(gather(result.get()));
-                } else {
-                    ev.getChannel().sendMessage("I know nothing about '" + word + "'");
-                }
-            });
-            default -> executor.execute(() -> {
-                Collections.shuffle(words, ThreadLocalRandom.current());
-                for (String word : words) {
-                    Optional<List<String>> result = model.generate(word, ThreadLocalRandom.current());
-                    if (result.isPresent()) {
-                        ev.getChannel().sendMessage(gather(result.get()));
-                        return;
-                    }
-                }
-                ev.getChannel().sendMessage("I know nothing about '" + query + "'");
-            });
-        }
-    }
-
-    @Override
-    public void onMessageCreate(MessageCreateEvent ev) {
-        MessageAuthor author = ev.getMessageAuthor();
-        if (!author.isBotUser()) {
-            String content = ev.getMessageContent();
-            if (!content.startsWith("!")) {
-                List<AnnotatedToken> sequence = filterTokens(ev.getApi(), tokenizer.tokenize(content));
-                executor.execute(() -> model.update(AnnotatedTokens.listAsText(sequence)));
-            }
-        }
-    }
-
-    /** Remove emote unknown to bot because it will not be able to replicate them */
-    private List<AnnotatedToken> filterTokens(DiscordApi discord, List<AnnotatedToken> sequence) {
-        return sequence.stream()
-                .filter(token -> token.handle(new AnnotatedToken.Handler<Boolean>() {
-                    @Override public Boolean onNewlineToken() {
-                        return true;
-                    }
-                    @Override public Boolean onWordToken(String word) {
-                        return true;
-                    }
-                    @Override public Boolean onPunctuationToken(String text) {
-                        return true;
-                    }
-                    @Override public Boolean onEmoteToken(String text, String name, long id) {
-                        return discord.getCustomEmojiById(id).isPresent();
-                    }
-                }))
-                .toList();
-    }
 
     /**
      * Builds a post from text tokens, primarily follows these rules:
