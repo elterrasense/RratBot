@@ -42,6 +42,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     @Autowired
     private FactsCommandExecutor facts;
 
+    @Autowired
+    private CaptionFactsCommandExecutor captionfacts;
+
     @PostConstruct
     private void postConstruct() {
         commands.put("rateself", rateSelf);
@@ -51,6 +54,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("wherekuri", whereKuri);
         commands.put("kurimoment", mikuriMoment);
         commands.put("caption", captionImg);
+        commands.put("captionfacts", captionfacts);
         commands.put("facts", facts);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(

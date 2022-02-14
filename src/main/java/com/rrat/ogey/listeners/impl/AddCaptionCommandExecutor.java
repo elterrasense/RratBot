@@ -22,7 +22,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         else
             return;
 
-        if (Mimg == null)
+        if (Mimg == null || arguments == null)
             return;
         new MessageBuilder().addAttachment(captionimage(Mimg,arguments),
                 "Captionedimage.png").send(event.getChannel());
@@ -48,16 +48,16 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         }
         wlines.add(String.valueOf(TempLine));
         g.dispose();
-        BufferedImage sentimage = new BufferedImage(imgWidth, (int) (imgHeight * 1.15 + Lines * g.getFontMetrics().getHeight()), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage sentimage = new BufferedImage(imgWidth, (int) (imgHeight * 1.18 + Lines * g.getFontMetrics().getHeight()), BufferedImage.TYPE_INT_ARGB);
         g = (Graphics2D) sentimage.getGraphics();
-        g.setFont(new Font("Arial", Font.PLAIN, (int) (imgHeight * .15)));
-        g.drawImage(bufferedImage, 0, (int) (imgHeight * .15 + Lines * g.getFontMetrics().getHeight()), imgWidth, imgHeight, null);
+        g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
+        g.drawImage(bufferedImage, 0, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()), imgWidth, imgHeight, null);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.fillRect(0, 0, imgWidth, (int) (imgHeight * .15 + Lines * g.getFontMetrics().getHeight()));
+        g.fillRect(0, 0, imgWidth, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()));
         g.setColor(Color.black);
-        int liney = (int) (-g.getFontMetrics().getHeight() * 0.3);
+        int liney = (int) (-g.getFontMetrics().getHeight() * 0.25);
         for (String line : wlines)
-            g.drawString(line, 0, liney += g.getFontMetrics().getHeight());
+            g.drawString(line, (imgWidth-g.getFontMetrics().stringWidth(line))/2, liney += g.getFontMetrics().getHeight());
         g.dispose();
         return sentimage;
     }
