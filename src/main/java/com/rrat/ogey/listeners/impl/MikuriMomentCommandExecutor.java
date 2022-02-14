@@ -19,7 +19,7 @@ public class MikuriMomentCommandExecutor implements CommandExecutor {
             //Get a random image
             //Saved for testing purposes
             // File dir = Paths.get(System.getProperty("user.home"), "MikuriScreenshots").toFile();
-            File dir = new File("/MikuriScreenshots/");
+            File dir = new File("MikuriScreenshots");
             String[] files = dir.list();
             int image = new Random().nextInt(files.length);
             //Random footer
