@@ -32,14 +32,14 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
         int imgWidth = bufferedImage.getWidth(), imgHeight = bufferedImage.getHeight(), Lines = 0;
         Graphics2D g = (Graphics2D) bufferedImage.getGraphics();
-        g.setFont(new Font("Futura XBlk", Font.PLAIN, (int) (imgHeight * .15)));
+        g.setFont(new Font("Futura XBlk BT", Font.PLAIN, (int) (imgHeight * .15)));
 
         ArrayList<String> wlines = new ArrayList<>();
         StringBuilder TempLine = new StringBuilder();
         for (String word : arguments.split(" ")) {
 
             if (g.getFontMetrics().stringWidth(String.valueOf(TempLine)) + g.getFontMetrics().stringWidth(word) > imgWidth * 1.01) {
-                wlines.add(String.valueOf(TempLine));
+                wlines.add(String.valueOf(TempLine).trim());
                 TempLine.delete(0, TempLine.length());
                 Lines++;
             }
@@ -50,7 +50,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         g.dispose();
         BufferedImage sentimage = new BufferedImage(imgWidth, (int) (imgHeight * 1.18 + Lines * g.getFontMetrics().getHeight()), BufferedImage.TYPE_INT_ARGB);
         g = (Graphics2D) sentimage.getGraphics();
-        g.setFont(new Font("Futura XBlk", Font.PLAIN, (int) (imgHeight * .15)));
+        g.setFont(new Font("Futura XBlk BT", Font.PLAIN, (int) (imgHeight * .15)));
         g.drawImage(bufferedImage, 0, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()), imgWidth, imgHeight, null);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.fillRect(0, 0, imgWidth, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()));
