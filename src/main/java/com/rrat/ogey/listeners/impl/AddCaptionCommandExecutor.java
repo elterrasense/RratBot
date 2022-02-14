@@ -25,7 +25,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         if (Mimg == null || arguments == null)
             return;
         new MessageBuilder().addAttachment(captionimage(Mimg,arguments),
-                "Captionedimage.png").send(event.getChannel());
+                "Captionedimage.jpg").send(event.getChannel());
     }
 
     private BufferedImage captionimage(BufferedImage bufferedImage,String arguments) {
