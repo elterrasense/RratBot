@@ -15,13 +15,12 @@ import java.util.concurrent.ThreadLocalRandom;
 @Component
 public class CaptionFactsCommandExecutor implements CommandExecutor {
 
-    private final AnnotateTokenizer tokenizer = AnnotateTokenizer.create();
-
     @Autowired
     private MarkovModelComponent markov;
 
     @Override
     public void execute(MessageCreateEvent ev, String arguments) {
+        AnnotateTokenizer tokenizer = AnnotateTokenizer.instance();
         if (arguments != null) {
             CaptionedFact(ev, AnnotatedTokens.listWords(tokenizer.tokenize(arguments)), arguments);
         } else {
