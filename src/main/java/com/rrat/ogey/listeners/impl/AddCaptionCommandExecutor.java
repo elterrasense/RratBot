@@ -19,6 +19,8 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
             Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).downloadAsImage().join();
         else if (!event.getMessageAttachments().isEmpty() && event.getMessageAttachments().get(0).isImage())
             Mimg = event.getMessageAttachments().get(0).downloadAsImage().join();
+        else if (event.getMessageAttachments().isEmpty() && event.getMessage().getMessagesBefore(1).join().getNewestMessage().isPresent() && event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).isImage() )
+            Mimg = event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).downloadAsImage().join();
         else
             return;
 
@@ -39,6 +41,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         for (String word : arguments.split(" ")) {
 
             if (g.getFontMetrics().stringWidth(String.valueOf(TempLine)) + g.getFontMetrics().stringWidth(word) > imgWidth * 1.01) {
+                TempLine.setLength(TempLine.length() - 1);
                 wlines.add(String.valueOf(TempLine));
                 TempLine.delete(0, TempLine.length());
                 Lines++;
@@ -46,6 +49,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
             TempLine.append(word);
             TempLine.append(" ");
         }
+        TempLine.setLength(TempLine.length() - 1);
         wlines.add(String.valueOf(TempLine));
         g.dispose();
         BufferedImage sentimage = new BufferedImage(imgWidth, (int) (imgHeight * 1.18 + Lines * g.getFontMetrics().getHeight()), BufferedImage.TYPE_INT_RGB);
