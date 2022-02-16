@@ -28,8 +28,6 @@ public class MarkovModelComponent {
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final AnnotateTokenizer tokenizer = AnnotateTokenizer.create();
-
     private MarkovModel model;
 
     @Autowired
@@ -125,6 +123,7 @@ public class MarkovModelComponent {
      */
     private String gather(List<String> tokens) {
         StringBuilder text = new StringBuilder();
+
         for (int j = 0; j < tokens.size(); j++) {
             String token = tokens.get(j);
             if (j == 0) {
