@@ -7,19 +7,18 @@ import com.rrat.ogey.model.AnnotatedToken;
 import com.rrat.ogey.model.AnnotatedTokens;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.MessageAuthor;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class FactsCommandExecutor implements CommandExecutor, MessageCreateListener {
-
-    private final AnnotateTokenizer tokenizer = AnnotateTokenizer.create();
 
     @Autowired
     private MarkovModelComponent markov;
@@ -27,6 +26,7 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
     @Override
     public void execute(MessageCreateEvent ev, String arguments) {
         if (arguments != null) {
+            AnnotateTokenizer tokenizer = AnnotateTokenizer.instance();
             spitFacts(ev, AnnotatedTokens.listWords(tokenizer.tokenize(arguments)), arguments);
         } else {
             spitFacts(ev, Collections.emptyList(), null);
@@ -73,14 +73,18 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
         if (!author.isBotUser()) {
             String content = ev.getMessageContent();
             if (!content.startsWith("!")) {
-                List<AnnotatedToken> sequence = filterTokens(ev.getApi(), tokenizer.tokenize(content));
-                markov.updateModelAsync(AnnotatedTokens.listAsText(sequence));
+                AnnotateTokenizer tokenizer = AnnotateTokenizer.instance();
+                markov.updateModelAsync(convertTokens(ev, tokenizer.tokenize(content)));
             }
         }
     }
 
-    /** Remove emote unknown to bot because it will not be able to replicate them */
-    private List<AnnotatedToken> filterTokens(DiscordApi discord, List<AnnotatedToken> sequence) {
+    /** Remove unknown emotes, replace user mentions with usernames */
+    private List<String> convertTokens(MessageCreateEvent ev, List<AnnotatedToken> sequence) {
+
+        DiscordApi discord = ev.getApi();
+
+        final Map<Long, User> users = new HashMap<>();
         return sequence.stream()
                 .filter(token -> token.handle(new AnnotatedToken.Handler<Boolean>() {
                     @Override public Boolean onNewlineToken() {
@@ -94,6 +98,36 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                     }
                     @Override public Boolean onEmoteToken(String text, String name, long id) {
                         return discord.getCustomEmojiById(id).isPresent();
+                    }
+                    @Override public Boolean onMentionToken(long id) {
+                        CompletableFuture<User> future = discord.getUserById(id);
+                        Optional<User> mentioned = future.handle((user, throwable) -> {
+                            if (throwable != null) {
+                                return Optional.<User>empty();
+                            } else {
+                                return Optional.of(user);
+                            }
+                        }).join();
+                        mentioned.ifPresent(user -> users.put(id, user));
+                        return mentioned.isPresent();
+                    }
+                }))
+                .map(token -> token.handle(new AnnotatedToken.Handler<String>() {
+                    @Override public String onNewlineToken() {
+                        return token.asText();
+                    }
+                    @Override public String onWordToken(String word) {
+                        return token.asText();
+                    }
+                    @Override public String onPunctuationToken(String text) {
+                        return token.asText();
+                    }
+                    @Override public String onEmoteToken(String text, String name, long id) {
+                        return token.asText();
+                    }
+                    @Override public String onMentionToken(long id) {
+                        User user = users.get(id);
+                        return user.getName();
                     }
                 }))
                 .toList();

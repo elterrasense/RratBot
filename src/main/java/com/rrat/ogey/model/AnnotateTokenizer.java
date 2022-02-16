@@ -3,6 +3,8 @@ package com.rrat.ogey.model;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -16,13 +18,18 @@ import java.util.stream.Stream;
  */
 public final class AnnotateTokenizer {
 
+    public static AnnotateTokenizer instance() {
+        return AnnotateTokenizerHolder.instance;
+    }
+
+    /** g: initialization-on-demand holder idiom */
+    private static final class AnnotateTokenizerHolder {
+        private static final AnnotateTokenizer instance = new AnnotateTokenizer();
+    }
+
     public static final Pattern pt_word_split = Pattern.compile("\\b");
     public static final Pattern pt_word = Pattern.compile("\\w+");
     public static final Pattern pt_punctuation = Pattern.compile("^[>.,;:!?'\n]$");
-
-    public static AnnotateTokenizer create() {
-        return new AnnotateTokenizer();
-    }
 
     public List<AnnotatedToken> tokenize(String text) {
 
@@ -63,6 +70,8 @@ public final class AnnotateTokenizer {
         chain = Arrays.asList(
                 // Wipe hyperlinks from the post, otherwise it creates nonsensical text sequences later on
                 hyperlink_removal_pass,
+                // Locate and annotate user mentions
+                mention_annotation_pass,
                 // Locate and annotate discord emotes
                 emote_annotation_pass,
                 // Split newlines and insert newline tokens
@@ -105,37 +114,70 @@ public final class AnnotateTokenizer {
         }
     }
 
-    private static final TokenizerPass hyperlink_removal_pass = text ->
-            Stream.of(new TokenizerSequence.UnprocessedText(text.replaceAll("http.*?(\\s|$)", "")));
+    /**
+     * Iterate over regexp matches while keeping track of surrounding text
+     * @param action accepts text before last match until now and the matcher itself
+     * @return remaining text after the last match
+     */
+    private static String forEachMatch(
+            Pattern pattern,
+            String text,
+            BiConsumer<String, Matcher> action) {
 
-    private static final Pattern pt_emote = Pattern.compile("<:(?<name>\\w+):(?<id>\\d+)>");
-    private static final TokenizerPass emote_annotation_pass = text -> {
+        Matcher matcher = pattern.matcher(text);
 
-        Matcher matcher = pt_emote.matcher(text);
-        Stream.Builder<TokenizerSequence> sequence = Stream.builder();
-
-        // Split text into unprocessed text sequence item before the match, annotated token, and remaining text.
-        // index stores the location of remain substring in the text,
-        // since match refers to location in text, rather than in remain string
+        // Split string into text before the match, currently matched text, and remaining text.
+        // index stores the location of remain substring in the original argument string,
+        // since match refers to location in it, rather than in 'remain' string
         int index = 0;
         String remain = text;
+
         while (matcher.find()) {
 
             String unprocessed = remain.substring(0, matcher.start() - index);
             remain = remain.substring(matcher.end() - index, remain.length());
             index = matcher.end();
 
-            sequence.add(new TokenizerSequence.UnprocessedText(unprocessed));
-            sequence.add(new TokenizerSequence.Token(
-                    AnnotatedToken.emote(
-                            matcher.group(),
-                            matcher.group("name"),
-                            Long.parseLong(matcher.group("id")))));
+            action.accept(unprocessed, matcher);
         }
-        sequence.add(new TokenizerSequence.UnprocessedText(remain));
 
+        return remain;
+    }
+
+    /** Automatically converts surrounding text into tokenizer sequence wrapper */
+    private static Stream<TokenizerSequence> tokenizeByPattern(
+            Pattern pattern,
+            String text,
+            Function<Matcher, TokenizerSequence> fn) {
+
+        Stream.Builder<TokenizerSequence> sequence = Stream.builder();
+        String remain = forEachMatch(pattern, text, (unprocessed, matcher) -> {
+            sequence.add(new TokenizerSequence.UnprocessedText(unprocessed));
+            sequence.add(fn.apply(matcher));
+        });
+        sequence.add((new TokenizerSequence.UnprocessedText(remain)));
         return sequence.build();
-    };
+    }
+
+    private static final TokenizerPass hyperlink_removal_pass = text ->
+            Stream.of(new TokenizerSequence.UnprocessedText(text.replaceAll("http.*?(\\s|$)", "")));
+
+    private static final Pattern pt_emote = Pattern.compile("<:(?<name>\\w+):(?<id>\\d+)>");
+    private static final TokenizerPass emote_annotation_pass = text ->
+            tokenizeByPattern(pt_emote, text, matcher ->
+                    new TokenizerSequence.Token(
+                            AnnotatedToken.emote(
+                                    matcher.group(),
+                                    matcher.group("name"),
+                                    Long.parseLong(matcher.group("id")))));
+
+    private static final Pattern pt_mention = Pattern.compile("<@(?<id>\\w+)>");
+    private static final TokenizerPass mention_annotation_pass = text ->
+            tokenizeByPattern(pt_mention, text, matcher ->
+                    new TokenizerSequence.Token(
+                            AnnotatedToken.mention(
+                                    matcher.group(),
+                                    Long.parseLong(matcher.group("id")))));
 
     private static final TokenizerPass newline_split_pass = text -> {
 

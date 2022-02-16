@@ -22,15 +22,10 @@ public final class AnnotatedTokens {
             @Override public Void onEmoteToken(String text, String name, long id) {
                 return null;
             }
+            @Override public Void onMentionToken(long id) {
+                return null;
+            }
         });
         return words;
-    }
-
-    public static List<String> listAsText(List<AnnotatedToken> sequence) {
-        ArrayList<String> textTokens = new ArrayList<>(sequence.size());
-        for (AnnotatedToken token : sequence) {
-            textTokens.add(token.asText());
-        }
-        return textTokens;
     }
 }

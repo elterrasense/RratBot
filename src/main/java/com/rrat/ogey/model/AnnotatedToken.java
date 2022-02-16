@@ -10,6 +10,7 @@ public abstract class AnnotatedToken {
         O onWordToken(String word);
         O onPunctuationToken(String text);
         O onEmoteToken(String text, String name, long id);
+        O onMentionToken(long id);
     }
 
     public abstract String asText();
@@ -26,6 +27,12 @@ public abstract class AnnotatedToken {
 
     public static AnnotatedToken punctuation(String punctuation) {
         return new PunctuationTokenCase(Objects.requireNonNull(punctuation));
+    }
+
+    public static AnnotatedToken mention(String text, long id) {
+        return new MentionTokenCase(
+                Objects.requireNonNull(text),
+                id);
     }
 
     public static AnnotatedToken emote(String text, String name, long id) {
@@ -98,6 +105,24 @@ public abstract class AnnotatedToken {
         }
         @Override public String toString() {
             return "AnnotatedToken.emote[" + emoteName + ", " + emoteId + "]";
+        }
+    }
+
+    private static final class MentionTokenCase extends AnnotatedToken {
+        private final String text;
+        private final long id;
+        private MentionTokenCase(String text, long id) {
+            this.text = text;
+            this.id = id;
+        }
+        @Override public <O> O handle(Handler<O> handler) {
+            return handler.onMentionToken(id);
+        }
+        @Override public String asText() {
+            return text;
+        }
+        @Override public String toString() {
+            return "AnnotatedToken.mention[" + id  + "]";
         }
     }
 }
