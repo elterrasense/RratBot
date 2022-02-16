@@ -4,8 +4,12 @@ import com.rrat.ogey.listeners.CommandExecutor;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
+
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 
 
@@ -32,14 +36,24 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
     private BufferedImage captionimage(BufferedImage bufferedImage,String arguments) {
 
-        int imgWidth = bufferedImage.getWidth(), imgHeight = bufferedImage.getHeight(), Lines = 0;
+        int imgWidth = bufferedImage.getWidth(), imgHeight = bufferedImage.getHeight(), Lines = 0,emojicount = 0;
         Graphics2D g = (Graphics2D) bufferedImage.getGraphics();
         g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
 
         ArrayList<String> wlines = new ArrayList<>();
+        ArrayList<Image> emojis = new ArrayList<>();
         StringBuilder TempLine = new StringBuilder();
         for (String word : arguments.split(" ")) {
-
+            if (word.startsWith("<:")) {
+                word = word.replaceAll("\\D+", "");
+                emojicount++;
+                try {
+                    emojis.add(ImageIO.read(new URL("https://cdn.discordapp.com/emojis/<EmojiID>.png".replace("<EmojiID>", word))));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                word = "&";
+            }
             if (g.getFontMetrics().stringWidth(String.valueOf(TempLine)) + g.getFontMetrics().stringWidth(word) > imgWidth * 1.01) {
                 TempLine.setLength(TempLine.length() - 1);
                 wlines.add(String.valueOf(TempLine));
@@ -59,10 +73,20 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.fillRect(0, 0, imgWidth, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()));
         g.setColor(Color.black);
-        int liney = (int) (-g.getFontMetrics().getHeight() * 0.25);
-        for (String line : wlines)
-            g.drawString(line, (imgWidth-g.getFontMetrics().stringWidth(line))/2, liney += g.getFontMetrics().getHeight());
-        g.dispose();
+        int liney = (int) (-g.getFontMetrics().getHeight() * 0.25),wwidths,emoji = -1;
+        for (String line : wlines) {
+            wwidths=(imgWidth - g.getFontMetrics().stringWidth(line)) / 2;
+            for (String word : line.split(" ")) {
+                if (word.equals("&") && emoji + 1 != emojicount) {
+                    g.drawImage(emojis.get(emoji += 1), wwidths, liney + g.getFontMetrics().getHeight() / 3, (int) (g.getFontMetrics().getHeight() * 0.7), (int) (g.getFontMetrics().getHeight() * 0.7), null);
+                }
+                else
+                    g.drawString(word, (wwidths), liney + g.getFontMetrics().getHeight());
+                wwidths += g.getFontMetrics().stringWidth(word + " ");
+
+            }
+            liney += g.getFontMetrics().getHeight();
+        }
         return sentimage;
     }
 }
