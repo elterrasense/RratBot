@@ -3,6 +3,7 @@ package com.rrat.ogey.model;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
 
@@ -43,18 +44,76 @@ public final class MarkovModel implements Serializable {
                 .map(ngram -> generate(rng, ngram));
     }
 
-    private List<String> generate(RandomGenerator rng, NGram start) {
+    public Optional<List<String>> generateQuote(RandomGenerator rng) {
+        ArrayList<NGram> quotes = new ArrayList<>(counters.size());
+        for (NGram ngram : counters.keySet()) {
+            if (">".equals(ngram.tokens[0])) {
+                quotes.add(ngram);
+            }
+        }
+        if (quotes.isEmpty()) {
+            return Optional.empty();
+        } else {
+            NGram start = quotes.get(rng.nextInt(quotes.size()));
+            // Generate a sentence, but always check the last word in the sentence,
+            // there's a chance we can continue writing the post if a ngram with '>' outcome exists,
+            // otherwise just generate text anew
+            int genLimit = 2;
+            ArrayList<String> post = new ArrayList<>();
+            Collections.addAll(post, start.tokens);
+            forEachRandomOutcome(rng, start, post::add);
+            while (genLimit > 0) {
 
+                // Record last words from post into a ngram, end it with a newline:
+                String[] last = new String[ngramLength];
+                for (int j = 0; j < ngramLength - 1; j++) {
+                    last[j] = post.get(1 + j + post.size() - ngramLength);
+                }
+                last[ngramLength - 1] = "\n";
+                NGram continuation = new NGram(last);
+
+                NGramCounter cnt =  counters.get(continuation);
+                if (cnt == null) {
+
+                    // Just start generation anew:
+                    genLimit--;
+                    post.add("\n");
+                    NGram next = quotes.get(rng.nextInt(quotes.size()));
+                    Collections.addAll(post, next.tokens);
+                    forEachRandomOutcome(rng, next, post::add);
+
+                } else {
+
+                    Collections.addAll(post, "\n", ">");
+                    // Try to lookup '>' ngram next, if there is none, just pretend like newline starts with '>'
+                    NGram quoteContinuation = NGram.shift(continuation, ">");
+                    if (counters.containsKey(quoteContinuation)) {
+                        forEachRandomOutcome(rng, quoteContinuation, post::add);
+                    } else {
+                        forEachRandomOutcome(rng, continuation, post::add);
+                    }
+                }
+            }
+            return Optional.of(post);
+        }
+    }
+
+    private List<String> generate(RandomGenerator rng, NGram start) {
         ArrayList<String> tokens = new ArrayList<>();
         Collections.addAll(tokens, start.tokens);
+        forEachRandomOutcome(rng, start, tokens::add);
+        return tokens;
+    }
 
+    /** Iterate over random ngram outcomes starting from {@code start} */
+    private void forEachRandomOutcome(RandomGenerator rng, NGram start, Consumer<String> consumer) {
         NGram cursor = start;
         while (true) {
             String outcome = pickOutcome(cursor, rng);
             if (outcome == null) {
-                return tokens;
+                return;
             } else {
-                tokens.add(outcome);
+                consumer.accept(outcome);
                 cursor = NGram.shift(cursor, outcome);
             }
         }

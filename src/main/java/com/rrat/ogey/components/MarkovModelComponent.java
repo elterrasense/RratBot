@@ -81,6 +81,12 @@ public class MarkovModelComponent {
         return CompletableFuture.supplyAsync(supplier, executor);
     }
 
+    public CompletableFuture<Optional<String>> generateQuote() {
+        Supplier<Optional<String>> supplier = () ->
+                model.generateQuote(ThreadLocalRandom.current()).map(this::gather);
+        return CompletableFuture.supplyAsync(supplier, executor);
+    }
+
     private @Nullable MarkovModel loadPersistentMarkov() {
         Path file = getModelObjectFilepath();
         if (Files.exists(file)) {
@@ -150,9 +156,20 @@ public class MarkovModelComponent {
                     }
                     case "\n" -> {
                         if (hasMore(tokens, j)) {
-                            text.append("\n");
-                            text.append(tokens.get(1 + j));
-                            j++;
+                            String next = tokens.get(1 + j);
+                            if (">".equals(next)) {
+                                text.append("\n>");
+                                if (hasMore(tokens, 1 + j)) {
+                                    text.append(tokens.get(2 + j));
+                                    j = j + 2;
+                                } else {
+                                    j++;
+                                }
+                            } else {
+                                text.append("\n");
+                                text.append(next);
+                                j++;
+                            }
                         }
                     }
                     default -> {

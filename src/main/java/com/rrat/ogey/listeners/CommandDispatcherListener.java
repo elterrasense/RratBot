@@ -43,6 +43,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     private FactsCommandExecutor facts;
 
     @Autowired
+    private GreenTextCommandExecutor greenText;
+
+    @Autowired
     private CaptionFactsCommandExecutor captionfacts;
 
     @PostConstruct
@@ -56,6 +59,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("caption", captionImg);
         commands.put("captionfacts", captionfacts);
         commands.put("facts", facts);
+        commands.put("story", greenText);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(
                 "You can find the currently available commands here: " +
