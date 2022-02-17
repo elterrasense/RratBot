@@ -1,18 +1,24 @@
 package com.rrat.ogey.listeners.impl;
 
 import com.rrat.ogey.listeners.CommandExecutor;
+import com.rrat.ogey.listeners.services.MessagingService;
 import org.javacord.api.event.message.MessageCreateEvent;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
 
 @Component
 public class EightBallCommandExecutor implements CommandExecutor {
+
+    @Autowired
+    private MessagingService messagingService;
+
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
         if (arguments != null && !"".equals(arguments)) {
             //Chance of getting ip grabbed
-            int chance = (int) (Math.random()*(1000) + 1);
+            int chance = (int) (Math.random() * (1000) + 1);
             if (chance < 10) {
                 event.getChannel().sendMessage(
                         """
@@ -74,11 +80,15 @@ public class EightBallCommandExecutor implements CommandExecutor {
                         "Very doubtful."};
                 //Random number
                 int response = (int) (Math.random() * (20) + 1);
-                event.getChannel().sendMessage(responses[response]);
+                messagingService.sendMessage(responses[response],
+                        null,
+                        event.getChannel());
             }
         } else {
-            event.getChannel().sendMessage("Incorrect syntax, are you trying to use `!8ball " +
-                    "[yes/no question]`?");
+            messagingService.sendMessage("Incorrect syntax, are you trying to use `!8ball [yes/no question]`?",
+                    null,
+                    event.getChannel()
+            );
         }
     }
 }

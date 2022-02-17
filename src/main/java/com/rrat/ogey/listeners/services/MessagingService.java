@@ -7,5 +7,5 @@ import java.io.File;
 
 public interface MessagingService {
 
-    void sendMessage (String title, String description, File attachment, TextChannel channel);
+    void sendMessage(String title, File attachment, TextChannel channel);
 }

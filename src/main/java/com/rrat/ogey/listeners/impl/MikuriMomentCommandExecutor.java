@@ -18,6 +18,7 @@ public class MikuriMomentCommandExecutor implements CommandExecutor {
 
     @Autowired
     private MessagingService messagingService;
+
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
         if (arguments == null || "".equals(arguments)) {
@@ -27,12 +28,11 @@ public class MikuriMomentCommandExecutor implements CommandExecutor {
             File dir = new File("MikuriScreenshots");
             String[] files = dir.list();
             int image = new Random().nextInt(files.length);
-            File attachment = new File (dir + "/" + files[image]);
+            File attachment = new File(dir + "/" + files[image]);
             messagingService.sendMessage("Requested by " + event.getMessageAuthor().getDisplayName(),
-                    null,
                     attachment,
                     event.getChannel()
-                    );
+            );
             /*
             //Random footer
             String[] phrases = {
@@ -56,8 +56,7 @@ public class MikuriMomentCommandExecutor implements CommandExecutor {
                     .send(event.getChannel());
              */
         } else {
-            messagingService.sendMessage("Requested by " + event.getMessageAuthor(),
-                    "Incorrect syntax, are you trying to use `!kurimoment`?",
+            messagingService.sendMessage("Incorrect syntax, are you trying to use `!kurimoment`?",
                     null,
                     event.getChannel()
             );

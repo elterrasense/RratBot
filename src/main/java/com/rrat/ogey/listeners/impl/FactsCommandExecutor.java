@@ -2,6 +2,7 @@ package com.rrat.ogey.listeners.impl;
 
 import com.rrat.ogey.components.MarkovModelComponent;
 import com.rrat.ogey.listeners.CommandExecutor;
+import com.rrat.ogey.listeners.services.MessagingService;
 import com.rrat.ogey.model.AnnotateTokenizer;
 import com.rrat.ogey.model.AnnotatedToken;
 import com.rrat.ogey.model.AnnotatedTokens;
@@ -23,6 +24,9 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
     @Autowired
     private MarkovModelComponent markov;
 
+    @Autowired
+    private MessagingService messagingService;
+
     @Override
     public void execute(MessageCreateEvent ev, String arguments) {
         if (arguments != null) {
@@ -38,9 +42,15 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
             case 0 -> {
                 markov.generateSentenceAsync().thenAccept(maybeSentence -> {
                     if (maybeSentence.isPresent()) {
-                        ev.getChannel().sendMessage(maybeSentence.get());
+                        messagingService.sendMessage(maybeSentence.get(),
+                                null,
+                                ev.getChannel()
+                        );
                     } else {
-                        ev.getChannel().sendMessage("I know no facts yet");
+                        messagingService.sendMessage("I know no facts yet",
+                                null,
+                                ev.getChannel()
+                        );
                     }
                 });
             }
@@ -48,9 +58,15 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                 String word = words.get(0);
                 markov.generateSentenceAsync(word).thenAccept(maybeSentence -> {
                     if (maybeSentence.isPresent()) {
-                        ev.getChannel().sendMessage(maybeSentence.get());
+                        messagingService.sendMessage(maybeSentence.get(),
+                                null,
+                                ev.getChannel()
+                        );
                     } else {
-                        ev.getChannel().sendMessage("I know nothing about '" + word + "'");
+                        messagingService.sendMessage("I know nothing about '" + word + "'",
+                                null,
+                                ev.getChannel()
+                        );
                     }
                 });
             }
@@ -58,9 +74,15 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                 Collections.shuffle(words, ThreadLocalRandom.current());
                 markov.generateFirstPossibleSentenceAsync(words).thenAccept(maybeSentence -> {
                     if (maybeSentence.isPresent()) {
-                        ev.getChannel().sendMessage(maybeSentence.get());
+                        messagingService.sendMessage(maybeSentence.get(),
+                                null,
+                                ev.getChannel()
+                        );
                     } else {
-                        ev.getChannel().sendMessage("I know nothing about '" + query + "'");
+                        messagingService.sendMessage("I know nothing about '" + query + "'",
+                                null,
+                                ev.getChannel()
+                        );
                     }
                 });
             }
@@ -79,7 +101,9 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
         }
     }
 
-    /** Remove unknown emotes, replace user mentions with usernames */
+    /**
+     * Remove unknown emotes, replace user mentions with usernames
+     */
     private List<String> convertTokens(MessageCreateEvent ev, List<AnnotatedToken> sequence) {
 
         DiscordApi discord = ev.getApi();
@@ -87,19 +111,25 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
         final Map<Long, User> users = new HashMap<>();
         return sequence.stream()
                 .filter(token -> token.handle(new AnnotatedToken.Handler<Boolean>() {
-                    @Override public Boolean onNewlineToken() {
+                    @Override
+                    public Boolean onNewlineToken() {
                         return true;
                     }
-                    @Override public Boolean onWordToken(String word) {
+                    @Override
+                    public Boolean onWordToken(String word) {
                         return true;
                     }
-                    @Override public Boolean onPunctuationToken(String text) {
+                    @Override
+                    public Boolean onPunctuationToken(String text) {
                         return true;
                     }
-                    @Override public Boolean onEmoteToken(String text, String name, long id) {
+                    @Override
+                    public Boolean onEmoteToken(String text, String name, long id) {
                         return discord.getCustomEmojiById(id).isPresent();
                     }
-                    @Override public Boolean onMentionToken(long id) {
+
+                    @Override
+                    public Boolean onMentionToken(long id) {
                         CompletableFuture<User> future = discord.getUserById(id);
                         Optional<User> mentioned = future.handle((user, throwable) -> {
                             if (throwable != null) {
@@ -113,19 +143,24 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                     }
                 }))
                 .map(token -> token.handle(new AnnotatedToken.Handler<String>() {
-                    @Override public String onNewlineToken() {
+                    @Override
+                    public String onNewlineToken() {
                         return token.asText();
                     }
-                    @Override public String onWordToken(String word) {
+                    @Override
+                    public String onWordToken(String word) {
                         return token.asText();
                     }
-                    @Override public String onPunctuationToken(String text) {
+                    @Override
+                    public String onPunctuationToken(String text) {
                         return token.asText();
                     }
-                    @Override public String onEmoteToken(String text, String name, long id) {
+                    @Override
+                    public String onEmoteToken(String text, String name, long id) {
                         return token.asText();
                     }
-                    @Override public String onMentionToken(long id) {
+                    @Override
+                    public String onMentionToken(long id) {
                         User user = users.get(id);
                         return user.getName();
                     }
