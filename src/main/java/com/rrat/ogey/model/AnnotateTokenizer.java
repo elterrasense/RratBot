@@ -162,7 +162,7 @@ public final class AnnotateTokenizer {
     private static final TokenizerPass hyperlink_removal_pass = text ->
             Stream.of(new TokenizerSequence.UnprocessedText(text.replaceAll("http.*?(\\s|$)", "")));
 
-    private static final Pattern pt_emote = Pattern.compile("<:(?<name>\\w+):(?<id>\\d+)>");
+    private static final Pattern pt_emote = Pattern.compile("<(a)?:(?<name>\\w+):(?<id>\\d+)>");
     private static final TokenizerPass emote_annotation_pass = text ->
             tokenizeByPattern(pt_emote, text, matcher ->
                     new TokenizerSequence.Token(
