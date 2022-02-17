@@ -33,28 +33,6 @@ public class MikuriMomentCommandExecutor implements CommandExecutor {
                     attachment,
                     event.getChannel()
             );
-            /*
-            //Random footer
-            String[] phrases = {
-                    "Void",
-                    "Kuri moment",
-                    "Need an oil change",
-                    "Tow...",
-                    "Kuri please shut the fuck up",
-                    "Ban Rouge when",
-                    "Bon please come back",
-                    "Edel isn't real",
-                    "IP: 92.28.211.234",
-                    "mfw pic related"
-            };
-            int footer = (int) (Math.random() * (9) + 1);
-            new MessageBuilder().setEmbed(new EmbedBuilder()
-                    .setAuthor("Requested by " + event.getMessageAuthor().getDisplayName())
-                    .setImage(new File (dir + "/" + files[image]))
-                    .setFooter(phrases[footer])
-                    .setColor(new Color(167, 11, 11)))
-                    .send(event.getChannel());
-             */
         } else {
             messagingService.sendMessage("Incorrect syntax, are you trying to use `!kurimoment`?",
                     null,
