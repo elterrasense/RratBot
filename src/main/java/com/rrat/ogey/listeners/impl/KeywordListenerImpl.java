@@ -16,6 +16,7 @@ public class KeywordListenerImpl implements KeywordListener {
     private final static Pattern ogeyrrat = Pattern.compile("(?i)(^|\s)(ogey|rrat)(\s|$)");
     private final static Pattern man = Pattern.compile("(?i)(^)(man)($)");
     private final static Pattern nabeLore = Pattern.compile("(?i)(^)(!nabe)($)");
+    private final static Pattern rushia = Pattern.compile("(?i)(^)(rushia)($)");
 
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
@@ -74,6 +75,35 @@ public class KeywordListenerImpl implements KeywordListener {
             Matcher matcherMan = man.matcher(messageCreateEvent.getMessageContent());
             if (matcherMan.find()) {
                 messageCreateEvent.getChannel().sendMessage(":horse:");
+            }
+
+            //rushia
+            Matcher matcherRushia = rushia.matcher(messageCreateEvent.getMessageContent());
+            if (matcherRushia.find()) {
+                messageCreateEvent.getChannel()
+                        .sendMessage(
+                                """
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃＼○／
+                                        ┛┗┛┗┛┃ / /
+                                        ┓┏┓┏┓┃ノ)
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        ┓┏┓┏┓┃
+                                        ┛┗┛┗┛┃
+                                        """);
             }
         }
     }
