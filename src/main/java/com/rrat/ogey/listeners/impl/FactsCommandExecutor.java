@@ -2,7 +2,6 @@ package com.rrat.ogey.listeners.impl;
 
 import com.rrat.ogey.components.MarkovModelComponent;
 import com.rrat.ogey.listeners.CommandExecutor;
-import com.rrat.ogey.listeners.services.MessagingService;
 import com.rrat.ogey.model.AnnotateTokenizer;
 import com.rrat.ogey.model.AnnotatedToken;
 import com.rrat.ogey.model.AnnotatedTokens;
@@ -24,9 +23,6 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
     @Autowired
     private MarkovModelComponent markov;
 
-    @Autowired
-    private MessagingService messagingService;
-
     @Override
     public void execute(MessageCreateEvent ev, String arguments) {
         if (arguments != null) {
@@ -42,15 +38,9 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
             case 0 -> {
                 markov.generateSentenceAsync().thenAccept(maybeSentence -> {
                     if (maybeSentence.isPresent()) {
-                        messagingService.sendMessage(maybeSentence.get(),
-                                null,
-                                ev.getChannel()
-                        );
+                        ev.getChannel().sendMessage(maybeSentence.get());
                     } else {
-                        messagingService.sendMessage("I know no facts yet",
-                                null,
-                                ev.getChannel()
-                        );
+                        ev.getChannel().sendMessage("I know no facts yet");
                     }
                 });
             }
@@ -58,15 +48,9 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                 String word = words.get(0);
                 markov.generateSentenceAsync(word).thenAccept(maybeSentence -> {
                     if (maybeSentence.isPresent()) {
-                        messagingService.sendMessage(maybeSentence.get(),
-                                null,
-                                ev.getChannel()
-                        );
+                        ev.getChannel().sendMessage(maybeSentence.get());
                     } else {
-                        messagingService.sendMessage("I know nothing about '" + word + "'",
-                                null,
-                                ev.getChannel()
-                        );
+                        ev.getChannel().sendMessage("I know nothing about '" + word + "'");
                     }
                 });
             }
@@ -74,15 +58,9 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                 Collections.shuffle(words, ThreadLocalRandom.current());
                 markov.generateFirstPossibleSentenceAsync(words).thenAccept(maybeSentence -> {
                     if (maybeSentence.isPresent()) {
-                        messagingService.sendMessage(maybeSentence.get(),
-                                null,
-                                ev.getChannel()
-                        );
+                        ev.getChannel().sendMessage(maybeSentence.get());
                     } else {
-                        messagingService.sendMessage("I know nothing about '" + query + "'",
-                                null,
-                                ev.getChannel()
-                        );
+                        ev.getChannel().sendMessage("I know nothing about '" + query + "'");
                     }
                 });
             }
