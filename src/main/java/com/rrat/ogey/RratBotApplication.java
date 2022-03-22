@@ -6,6 +6,7 @@ import com.rrat.ogey.listeners.KeywordListener;
 import com.rrat.ogey.listeners.impl.FactsCommandExecutor;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.activity.ActivityType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -40,6 +41,8 @@ public class RratBotApplication {
 		String token = env.getProperty("TOKEN");
 		//Set token and check login and join
 		DiscordApi api = new DiscordApiBuilder().setToken(token).setAllNonPrivilegedIntents().login().join();
+		//Set activity
+		api.updateActivity(ActivityType.PLAYING, "Apex Legends");
 
 		//Listeners
 		api.addMessageCreateListener(commandDispatcherListener);
