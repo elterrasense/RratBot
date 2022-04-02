@@ -23,4 +23,6 @@ message it has ever seen.
 
 !kurimoment = Posts a certified Mikuri moment.
 
+!nabe = Nabe lore.
+
 The bot can also react to certain keywords which I won't list as it's funnier to find out by oneself.
