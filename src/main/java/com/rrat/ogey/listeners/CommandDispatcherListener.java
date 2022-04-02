@@ -48,6 +48,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     @Autowired
     private CaptionFactsCommandExecutor captionfacts;
 
+    @Autowired
+    private NabeLoreCommandExecutor nabeLore;
+
     @PostConstruct
     private void postConstruct() {
         commands.put("rateself", rateSelf);
@@ -56,6 +59,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("8ball", eightBall);
         commands.put("wherekuri", whereKuri);
         commands.put("kurimoment", mikuriMoment);
+        commands.put("nabe", nabeLore);
         commands.put("caption", captionImg);
         commands.put("captionfacts", captionfacts);
         commands.put("facts", facts);

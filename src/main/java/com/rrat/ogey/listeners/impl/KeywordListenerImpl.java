@@ -15,7 +15,6 @@ public class KeywordListenerImpl implements KeywordListener {
     private final static Pattern nabe = Pattern.compile("(?i)(^|\s)(nabe)(\s|$)");
     private final static Pattern ogeyrrat = Pattern.compile("(?i)(^|\s)(ogey|rrat)(\s|$)");
     private final static Pattern man = Pattern.compile("(?i)(^)(man)($)");
-    private final static Pattern nabeLore = Pattern.compile("(?i)(^)(!nabe)($)");
     private final static Pattern rushia = Pattern.compile("(?i)(^)(rushia)($)");
 
     @Override
@@ -47,14 +46,6 @@ public class KeywordListenerImpl implements KeywordListener {
                 messageCreateEvent.getChannel()
                         .sendMessage(
                                 "<:towasip:906605142214860840>");
-            }
-
-            //nabeLore
-            Matcher matcherNabeLore = nabeLore.matcher(messageCreateEvent.getMessageContent());
-            if (matcherNabeLore.find()) {
-                messageCreateEvent.getChannel()
-                        .sendMessage(
-                                "https://i.postimg.cc/mZCy4DNW/unknown.png");
             }
 
             //Ogey rrat
