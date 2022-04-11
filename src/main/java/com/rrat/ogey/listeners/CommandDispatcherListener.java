@@ -28,6 +28,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     private CockRateCommandExecutor cockRate;
 
     @Autowired
+    private CoupleMatchExecutor coupleMatch;
+
+    @Autowired
     private EightBallCommandExecutor eightBall;
 
     @Autowired
@@ -56,6 +59,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("rateself", rateSelf);
         commands.put("rate", rateThing);
         commands.put("cockrate", cockRate);
+        commands.put("ship", coupleMatch);
         commands.put("8ball", eightBall);
         commands.put("wherekuri", whereKuri);
         commands.put("kurimoment", mikuriMoment);

@@ -12,6 +12,8 @@ Repository for Rrat Bot
 
 !cockrate [thing] = Gives the exact cock's length of anything you input.
 
+!ship [argument] [argument2] = Gives a compatibility percentage between two persons (or whatever you give it)
+
 !8ball [yes/no question] = Answers your question based on reliable sources (me).
 
 !facts [keyword] = Gives a response based on a keyword utilizing a Markov model that reads every text

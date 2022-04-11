@@ -34,10 +34,7 @@ public class MikuriMomentCommandExecutor implements CommandExecutor {
                     event.getChannel()
             );
         } else {
-            messagingService.sendMessage("Incorrect syntax, are you trying to use `!kurimoment`?",
-                    null,
-                    event.getChannel()
-            );
+            event.getChannel().sendMessage("Incorrect syntax, this command doesn't use arguments.");
         }
     }
 }
