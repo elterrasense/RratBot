@@ -15,6 +15,8 @@ public class NabeLoreCommandExecutor implements CommandExecutor {
                     "Nabe orchestrated the Nanking massacre",
                     "Kson's battlestation (REAL) https://i.postimg.cc/26M7TxLT/unknown.png",
                     "Don't call women whores ever again.",
+                    "https://i.postimg.cc/k51nJP3L/unknown.png",
+                    "https://i.postimg.cc/7PgSLKhm/unknown.jpg",
                     "https://i.postimg.cc/mZCy4DNW/unknown.png",
                     "https://cdn.discordapp.com/attachments/270020168221065216/959690315952963644/usui_japanese_talk.mp4"
             };

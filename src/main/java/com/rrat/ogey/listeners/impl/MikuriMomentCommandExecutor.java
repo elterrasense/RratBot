@@ -23,8 +23,6 @@ public class MikuriMomentCommandExecutor implements CommandExecutor {
     public void execute(MessageCreateEvent event, String arguments) {
         if (arguments == null || "".equals(arguments)) {
             //Get a random image
-            //Saved for testing purposes
-            //File dir = Paths.get(System.getProperty("user.home"), "MikuriScreenshots").toFile();
             File dir = new File("MikuriScreenshots");
             String[] files = dir.list();
             int image = new Random().nextInt(files.length);
