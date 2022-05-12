@@ -2,6 +2,7 @@ package com.rrat.ogey.components;
 
 import com.rrat.ogey.model.AnnotateTokenizer;
 import com.rrat.ogey.model.MarkovModel;
+import com.rrat.ogey.model.MarkovModels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,12 +30,15 @@ public class MarkovModelComponent {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private MarkovModel model;
+    private MarkovModel nabe;
 
     @Autowired
     private Environment env;
 
     @PostConstruct
     private void postConstruct() {
+
+        this.nabe = MarkovModels.loadResource("/.nabe-chain.obj");
 
         this.model = Objects.requireNonNullElseGet(
                 loadPersistentMarkov(),
@@ -59,6 +63,14 @@ public class MarkovModelComponent {
     public CompletableFuture<Optional<String>> generateSentenceAsync() {
         Supplier<Optional<String>> supplier = () ->
                 model.generate(ThreadLocalRandom.current()).map(this::gather);
+        return CompletableFuture.supplyAsync(supplier, executor);
+    }
+
+    public CompletableFuture<Optional<String>> generateNabeAsync() {
+        Supplier<Optional<String>> supplier = () ->
+                Optional.ofNullable(nabe)
+                        .flatMap(m -> m.generate(ThreadLocalRandom.current()))
+                        .map(this::gather);
         return CompletableFuture.supplyAsync(supplier, executor);
     }
 
@@ -89,25 +101,19 @@ public class MarkovModelComponent {
 
     private @Nullable MarkovModel loadPersistentMarkov() {
         Path file = getModelObjectFilepath();
-        if (Files.exists(file)) {
-            try (FileInputStream is = new FileInputStream(file.toFile())) {
-                ObjectInputStream ois = new ObjectInputStream(is);
-                return (MarkovModel) ois.readObject();
-            } catch (ClassNotFoundException | IOException exception) {
-                logger.error(String.format("Unable to load persistent Markov chain '%s'", file), exception);
-                return null;
-            }
-        } else {
+        try {
+            return MarkovModels.load(file);
+        } catch (RuntimeException exception) {
+            logger.error(String.format("Unable to load persistent Markov chain '%s'", file), exception);
             return null;
         }
     }
 
     private void savePersistentMarkov() {
         Path file = getModelObjectFilepath();
-        try (FileOutputStream os = new FileOutputStream(file.toFile())) {
-            ObjectOutputStream ois = new ObjectOutputStream(os);
-            ois.writeObject(model);
-        } catch (IOException exception) {
+        try {
+            MarkovModels.save(file, model);
+        } catch (RuntimeException exception) {
             logger.error(String.format("Unable to save persistent Markov chain to '%s'", file), exception);
         }
     }
