@@ -19,10 +19,8 @@ public class KeywordListenerImpl implements KeywordListener {
 
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
-        //Condition to avoid bot matching its own messages
-        String botId = "939929446624936006";
-        String senderId = Long.toString(messageCreateEvent.getMessageAuthor().getId());
-        if (!senderId.equals(botId)) {
+        //Condition to avoid bot matching other bot messages
+        if (!messageCreateEvent.getMessageAuthor().isBotUser()) {
 
             //Once
             Matcher matcherOnce = once.matcher(messageCreateEvent.getMessageContent());
