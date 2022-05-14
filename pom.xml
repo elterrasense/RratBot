@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.rrat</groupId>
 	<artifactId>ogey</artifactId>
-	<version>1.5.9</version>
+	<version>1.6.0</version>
 	<name>RratBot</name>
 	<description>Discord bot for Rrat</description>
 	<properties>
@@ -42,6 +42,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.dkz</groupId>
+			<artifactId>genki</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/src/main/resources/genki-1.0-SNAPSHOT.jar</systemPath>
 		</dependency>
 	</dependencies>
 
