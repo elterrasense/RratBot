@@ -19,13 +19,15 @@ Repository for Rrat Bot
 !facts [keyword] = Gives a response based on a keyword utilizing a Markov model that reads every text
 message it has ever seen.
 
-!caption [sentence] / !captionfacts + (image)/(reply to an image) = Adds the sentence/fact as a caption to the image.
+!caption [sentence] / !captionfacts + (image/gif)/(reply to an image) = Adds the sentence/fact as a caption to the image/gif.
 
 !wheremikuri = Tells you exactly where on earth Mikuri is.
 
 !kurimoment = Posts a certified Mikuri moment.
 
 !nabemoment = Posts a certified Nabe moment.
+
+!nabefact [keyword]= a nabe fact
 
 !bubble (right) (x pos) (y pos) + (image) = Adds a speech bubble to an image, can be configured on how it is place by adding right and different x and y coordinates.
 
