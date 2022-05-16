@@ -60,17 +60,39 @@ public class MarkovModelComponent {
         executor.execute(() -> model.update(textTokens));
     }
 
-    public CompletableFuture<Optional<String>> generateSentenceAsync() {
-        Supplier<Optional<String>> supplier = () ->
-                model.generate(ThreadLocalRandom.current()).map(this::gather);
-        return CompletableFuture.supplyAsync(supplier, executor);
-    }
-
     public CompletableFuture<Optional<String>> generateNabeAsync() {
         Supplier<Optional<String>> supplier = () ->
                 Optional.ofNullable(nabe)
                         .flatMap(m -> m.generate(ThreadLocalRandom.current()))
                         .map(this::gather);
+        return CompletableFuture.supplyAsync(supplier, executor);
+    }
+
+    public CompletableFuture<Optional<String>> generateFirstPossibleNabeAsync(List<String> words) {
+        Supplier<Optional<String>> supplier = () -> {
+            for (String word : words) {
+                Optional<List<String>> result =  Optional.ofNullable(nabe)
+                        .flatMap(m -> m.generate(word,ThreadLocalRandom.current()));
+                if (result.isPresent()) {
+                    return result.map(this::gather);
+                }
+            }
+            return Optional.empty();
+        };
+        return CompletableFuture.supplyAsync(supplier, executor);
+    }
+
+    public CompletableFuture<Optional<String>> generateNabeAsync(String word) {
+        Supplier<Optional<String>> supplier = () ->
+                Optional.ofNullable(nabe)
+                        .flatMap(m -> m.generate(word,ThreadLocalRandom.current()))
+                        .map(this::gather);
+        return CompletableFuture.supplyAsync(supplier, executor);
+    }
+
+    public CompletableFuture<Optional<String>> generateSentenceAsync() {
+        Supplier<Optional<String>> supplier = () ->
+                model.generate(ThreadLocalRandom.current()).map(this::gather);
         return CompletableFuture.supplyAsync(supplier, executor);
     }
 
@@ -178,9 +200,8 @@ public class MarkovModelComponent {
                             }
                         }
                     }
-                    default -> {
-                        text.append(token);
-                    }
+                    default -> text.append(token);
+
                 }
             } else {
                 text.append(' ').append(token);

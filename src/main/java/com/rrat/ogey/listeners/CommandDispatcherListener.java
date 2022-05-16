@@ -57,6 +57,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     @Autowired
     private AddSpeechBubbleCommandExecutor bubble;
 
+    @Autowired
+    private NabeFactsCommandExecutor nabe;
+
     @PostConstruct
     private void postConstruct() {
         commands.put("rateself", rateSelf);
@@ -71,6 +74,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("captionfacts", captionfacts);
         commands.put("bubble", bubble);
         commands.put("facts", facts);
+        commands.put("nabefact", nabe);
         commands.put("story", greenText);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(

@@ -30,11 +30,11 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         byte[] Mimg = new byte[0];
         if (!event.getMessageAttachments().isEmpty() && event.getMessageAttachments().get(0).isImage())
             Mimg = event.getMessageAttachments().get(0).downloadAsByteArray().join();
-        else
-            if (event.getMessage().getReferencedMessage().isPresent() && !event.getMessage().getReferencedMessage().get().getAttachments().isEmpty()
-                    && event.getMessage().getReferencedMessage().get().getAttachments().get(0).isImage())
-                Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).downloadAsByteArray().join();
-            else if (event.getMessage().getMessagesBefore(2).join().getNewestMessage().isPresent() && !event.getMessage().getMessagesBefore(2).join().getNewestMessage().get().getAttachments().isEmpty()
+        else if (event.getMessage().getReferencedMessage().isPresent() && !event.getMessage().getReferencedMessage().get().getAttachments().isEmpty()
+                && event.getMessage().getReferencedMessage().get().getAttachments().get(0).isImage())
+            Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).downloadAsByteArray().join();
+        else if (event.getMessage().getMessagesBefore(2).join().getNewestMessage().isPresent())
+            if (!event.getMessage().getMessagesBefore(2).join().getNewestMessage().get().getAttachments().isEmpty()
                     && event.getMessage().getMessagesBefore(2).join().getNewestMessage().get().getAttachments().get(0).isImage())
                 Mimg = event.getMessage().getMessagesBefore(2).join().getNewestMessage().get().getAttachments().get(0).downloadAsByteArray().join();
 
@@ -44,17 +44,19 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
             return;
         }
         if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
-            try {captionGif(Mimg,arguments);} catch (IOException e) {e.printStackTrace();}
+            try {
+                captionGif(Mimg, arguments);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             new MessageBuilder().addAttachment(new File("./src/main/resources/GifOutput.gif")).send(event.getChannel());
-        }
-        else
+        } else
             new MessageBuilder().addAttachment(captionimage(Mimg, arguments), "Captionedimage.jpg").send(event.getChannel());
     }
 
     private BufferedImage captionimage(byte[] imageinput, String arguments) {
         BufferedImage bufferedImage = null;
-        try {bufferedImage = ImageIO.read(new ByteArrayInputStream(imageinput));
-        } catch (IOException e) {e.printStackTrace();}
+        try {bufferedImage = ImageIO.read(new ByteArrayInputStream(imageinput));} catch (IOException e) {e.printStackTrace();}
 
         assert bufferedImage != null;
         int imgWidth = bufferedImage.getWidth(), imgHeight = bufferedImage.getHeight(), Lines = 0, emojicount = 0;
@@ -177,21 +179,22 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
             outputStream.write(gifinput);
             outputStream.close();
         } catch (IOException e) {e.printStackTrace();}
-        ByteSink obs = new ChannelByteSink(Files.newByteChannel(Path.of("./src/main/resources/GifOutput.gif"), StandardOpenOption.CREATE,StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING), ByteBuffer.allocate(1 << 10));
+        ByteSink obs = new ChannelByteSink(Files.newByteChannel(Path.of("./src/main/resources/GifOutput.gif"), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING), ByteBuffer.allocate(1 << 10));
         final ProtoEncoder encoder = new ProtoEncoder(obs);
         new ProtoDecoder(new ChannelByteStream(
-                Files.newByteChannel(Path.of("./src/main/resources/GifInput.gif"),StandardOpenOption.READ),
+                Files.newByteChannel(Path.of("./src/main/resources/GifInput.gif"), StandardOpenOption.READ),
                 ByteBuffer.allocate(1 << 10)))
                 .accept(new ProtoVisitorDecorator(encoder) {
                     private LogicalScreenDescriptor lsd;
-                    boolean ColorTableOverride=false;
-                    int width,height,stripeHeight;
+                    boolean ColorTableOverride = false;
+                    int width, height, stripeHeight;
                     byte[] colors;
+
                     @Override
                     public void visitLogicalScreenDescriptor(LogicalScreenDescriptor descriptor) {
                         super.visitLogicalScreenDescriptor(lsd = new LogicalScreenDescriptor(
                                 descriptor.logicalScreenWidth(),
-                                captiononly(descriptor.logicalScreenHeight(),descriptor.logicalScreenWidth(),arguments).getHeight()
+                                captiononly(descriptor.logicalScreenHeight(), descriptor.logicalScreenWidth(), arguments).getHeight()
                                         + descriptor.logicalScreenHeight(),
                                 descriptor.globalColorTableUsed(),
                                 descriptor.colorResolution(),
@@ -200,32 +203,32 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                                 descriptor.pixelAspectRatio()));
                         width = descriptor.logicalScreenWidth();
                         height = descriptor.logicalScreenHeight();
-                        stripeHeight = captiononly(descriptor.logicalScreenHeight(),descriptor.logicalScreenWidth(),arguments).getHeight();
-                        colors = new byte[3*lsd.colorTableSize()];
+                        stripeHeight = captiononly(descriptor.logicalScreenHeight(), descriptor.logicalScreenWidth(), arguments).getHeight();
+                        colors = new byte[3 * lsd.colorTableSize()];
                     }
 
                     @Override
                     public void visitGlobalColorTable(int index, byte r, byte g, byte b) {
-                        colors[3*index] = r;
-                        colors[3*index+1] = g;
-                        colors[3*index+2] = b;
-                        if (!ColorTableOverride && Arrays.equals(new int[]{Byte.toUnsignedInt(r),Byte.toUnsignedInt(g),Byte.toUnsignedInt(b)}, new int[]{0, 255, 0})){
-                                colors[3 * index]= -1;
-                                colors[3 * index+1]= -1;
-                                colors[3 * index+2]= -1;
-                                ColorTableOverride=true;
-                            }
+                        colors[3 * index] = r;
+                        colors[3 * index + 1] = g;
+                        colors[3 * index + 2] = b;
+                        if (!ColorTableOverride && Arrays.equals(new int[]{Byte.toUnsignedInt(r), Byte.toUnsignedInt(g), Byte.toUnsignedInt(b)}, new int[]{0, 255, 0})) {
+                            colors[3 * index] = -1;
+                            colors[3 * index + 1] = -1;
+                            colors[3 * index + 2] = -1;
+                            ColorTableOverride = true;
+                        }
                         super.visitGlobalColorTable(index, r, g, b);
                     }
 
-                    int frame = 0,gceframe = 0;
+                    int frame = 0, gceframe = 0;
 
                     @Override
                     public void visitGraphicsControlExtension(GraphicsControlExtension extension) {
                         gceframe++;
                         if (gceframe != 1)
                             super.visitGraphicsControlExtension(extension);
-                        else{
+                        else {
                             super.visitGraphicsControlExtension(new GraphicsControlExtension(
                                     (byte) 1, // Disposal Method
                                     extension.inputFlag(),
@@ -247,7 +250,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                                     descriptor.localColorTableUsed(),
                                     descriptor.interlacingUsed(),
                                     descriptor.colorTableSizeBits()));
-                        }   else {
+                        } else {
                             ImageDescriptor id = new ImageDescriptor(
                                     descriptor.imageLeftPosition(),
                                     descriptor.imageTopPosition(),
@@ -257,15 +260,16 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                                     descriptor.interlacingUsed(),
                                     ColorTableOverride ? lsd.colorTableSizeBits() : 0);
 
-                            int[][] line = CalculateLineIndexes(colors,captiononly(height,width,arguments));
-                            ImageEncoder encoder = new ImageEncoder(LZW::makeEncoder ,lsd,id,super.visitImage(id));
+                            int[][] line = CalculateLineIndexes(colors, captiononly(height, width, arguments));
+                            ImageEncoder encoder = new ImageEncoder(LZW::makeEncoder, lsd, id, super.visitImage(id));
                             if (ColorTableOverride)
-                                for (int index = 0; index < colors.length/3; index++)
+                                for (int index = 0; index < colors.length / 3; index++)
                                     encoder.visitColorTable(index, colors[3 * index], colors[3 * index + 1], colors[3 * index + 2]);
-                            return new ImageDecoder(LZW::makeDecoder,new ImageVisitorDecorator(encoder){
-                                @Override public void visitDataStart() {
+                            return new ImageDecoder(LZW::makeDecoder, new ImageVisitorDecorator(encoder) {
+                                @Override
+                                public void visitDataStart() {
                                     super.visitDataStart();
-                                    for (int i = 0;i < stripeHeight; i++) {
+                                    for (int i = 0; i < stripeHeight; i++) {
                                         super.visitData(line[i]);
                                     }
                                 }
@@ -277,21 +281,21 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
     }
 
 
-    private int[][] CalculateLineIndexes(byte[] colors,BufferedImage image){
+    private int[][] CalculateLineIndexes(byte[] colors, BufferedImage image) {
         int[][] line = new int[image.getHeight()][image.getWidth()];
 
-        for (int y = 0; y < image.getHeight(); y++){
-            for (int x = 0; x < image.getWidth(); x++){
-                int color = image.getRGB(x,y), index=0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int color = image.getRGB(x, y), index = 0;
                 int blue = color & 0xff, green = (color & 0xff00) >> 8, red = (color & 0xff0000) >> 16;
-                int iblue = Byte.toUnsignedInt(colors[2]), igreen = Byte.toUnsignedInt(colors[1]),ired = Byte.toUnsignedInt(colors[0]);
-                double d = Math.pow((red-ired*0.30),2) + Math.pow(((green-igreen)*0.59),2) + Math.pow(((blue-iblue)*0.11),2);
-                for (int i = 1; i < colors.length/3; i++){
-                    iblue = Byte.toUnsignedInt(colors[3*i+2]);
-                    igreen = Byte.toUnsignedInt(colors[3*i+1]);
-                    ired = Byte.toUnsignedInt(colors[3*i]);
-                    double id = Math.pow((red-ired*0.30),2) + Math.pow(((green-igreen)*0.59),2) + Math.pow(((blue-iblue)*0.11),2);
-                    if (d > id){
+                int iblue = Byte.toUnsignedInt(colors[2]), igreen = Byte.toUnsignedInt(colors[1]), ired = Byte.toUnsignedInt(colors[0]);
+                double d = Math.pow((red - ired * 0.30), 2) + Math.pow(((green - igreen) * 0.59), 2) + Math.pow(((blue - iblue) * 0.11), 2);
+                for (int i = 1; i < colors.length / 3; i++) {
+                    iblue = Byte.toUnsignedInt(colors[3 * i + 2]);
+                    igreen = Byte.toUnsignedInt(colors[3 * i + 1]);
+                    ired = Byte.toUnsignedInt(colors[3 * i]);
+                    double id = Math.pow((red - ired * 0.30), 2) + Math.pow(((green - igreen) * 0.59), 2) + Math.pow(((blue - iblue) * 0.11), 2);
+                    if (d > id) {
                         d = id;
                         index = i;
                     }
