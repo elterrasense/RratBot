@@ -66,7 +66,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("8ball", eightBall);
         commands.put("wherekuri", whereKuri);
         commands.put("kurimoment", mikuriMoment);
-        commands.put("nabe", nabeLore);
+        commands.put("nabemoment", nabeLore);
         commands.put("caption", captionImg);
         commands.put("captionfacts", captionfacts);
         commands.put("bubble", bubble);

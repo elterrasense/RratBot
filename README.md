@@ -25,7 +25,7 @@ message it has ever seen.
 
 !kurimoment = Posts a certified Mikuri moment.
 
-!nabe = Nabe lore.
+!nabemoment = Posts a certified Nabe moment.
 
 !bubble (right) (x pos) (y pos) + (image) = Adds a speech bubble to an image, can be configured on how it is place by adding right and different x and y coordinates.
 
