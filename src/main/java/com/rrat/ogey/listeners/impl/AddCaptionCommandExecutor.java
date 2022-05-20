@@ -9,17 +9,13 @@ import su.dkzde.genki.*;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 
 @Component
@@ -45,11 +41,11 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         }
         if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
             try {
-                captionGif(Mimg, arguments);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            new MessageBuilder().addAttachment(new File("./src/main/resources/GifOutput.gif")).send(event.getChannel());
+                File GifOutput = File.createTempFile("GifOutput-",".gif");
+                captionGif(Mimg, arguments,GifOutput);
+            new MessageBuilder().addAttachment(GifOutput).send(event.getChannel());
+            GifOutput.delete();
+            } catch (IOException e) {e.printStackTrace();}
         } else
             new MessageBuilder().addAttachment(captionimage(Mimg, arguments), "Captionedimage.jpg").send(event.getChannel());
     }
@@ -173,16 +169,17 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         return argcaption;
     }
 
-    private void captionGif(byte[] gifinput, String arguments) throws IOException {
+    private void captionGif(byte[] gifinput, String arguments, File GifOutput) throws IOException {
+        File GifInput = File.createTempFile("GifInput-",".gif");
         try {
-            FileOutputStream outputStream = new FileOutputStream("./src/main/resources/GifInput.gif");
+            FileOutputStream outputStream = new FileOutputStream(GifInput);
             outputStream.write(gifinput);
             outputStream.close();
         } catch (IOException e) {e.printStackTrace();}
-        ByteSink obs = new ChannelByteSink(Files.newByteChannel(Path.of("./src/main/resources/GifOutput.gif"), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING), ByteBuffer.allocate(1 << 10));
+        ByteSink obs = new ChannelByteSink(Files.newByteChannel(GifOutput.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING), ByteBuffer.allocate(1 << 10));
         final ProtoEncoder encoder = new ProtoEncoder(obs);
         new ProtoDecoder(new ChannelByteStream(
-                Files.newByteChannel(Path.of("./src/main/resources/GifInput.gif"), StandardOpenOption.READ),
+                Files.newByteChannel(GifInput.toPath(), StandardOpenOption.READ),
                 ByteBuffer.allocate(1 << 10)))
                 .accept(new ProtoVisitorDecorator(encoder) {
                     private LogicalScreenDescriptor lsd;
@@ -277,6 +274,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         }
                     }
                 });
+        GifInput.delete();
         obs.close();
     }
 
