@@ -41,10 +41,9 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         }
         if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
             try {
-                File GifOutput = File.createTempFile("GifOutput-",".gif");
+                Path GifOutput = Files.createTempFile("GifOutput-",".gif");
                 captionGif(Mimg, arguments,GifOutput);
-            new MessageBuilder().addAttachment(GifOutput).send(event.getChannel());
-            GifOutput.delete();
+            new MessageBuilder().addAttachment(GifOutput.toFile()).send(event.getChannel()).thenRun(() -> GifOutput.toFile().delete());
             } catch (IOException e) {e.printStackTrace();}
         } else
             new MessageBuilder().addAttachment(captionimage(Mimg, arguments), "Captionedimage.jpg").send(event.getChannel());
@@ -169,17 +168,17 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         return argcaption;
     }
 
-    private void captionGif(byte[] gifinput, String arguments, File GifOutput) throws IOException {
-        File GifInput = File.createTempFile("GifInput-",".gif");
+    private void captionGif(byte[] gifinput, String arguments, Path GifOutput) throws IOException {
+        Path GifInput = Files.createTempFile("GifInput-",".gif");
         try {
-            FileOutputStream outputStream = new FileOutputStream(GifInput);
+            FileOutputStream outputStream = new FileOutputStream(GifInput.toFile());
             outputStream.write(gifinput);
             outputStream.close();
         } catch (IOException e) {e.printStackTrace();}
-        ByteSink obs = new ChannelByteSink(Files.newByteChannel(GifOutput.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING), ByteBuffer.allocate(1 << 10));
+        ByteSink obs = new ChannelByteSink(Files.newByteChannel(GifOutput, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING), ByteBuffer.allocate(1 << 10));
         final ProtoEncoder encoder = new ProtoEncoder(obs);
         new ProtoDecoder(new ChannelByteStream(
-                Files.newByteChannel(GifInput.toPath(), StandardOpenOption.READ),
+                Files.newByteChannel(GifInput, StandardOpenOption.READ),
                 ByteBuffer.allocate(1 << 10)))
                 .accept(new ProtoVisitorDecorator(encoder) {
                     private LogicalScreenDescriptor lsd;
@@ -274,7 +273,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         }
                     }
                 });
-        GifInput.delete();
+        GifInput.toFile().delete();
         obs.close();
     }
 
