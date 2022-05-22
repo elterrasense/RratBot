@@ -36,7 +36,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
         if (arguments == null || Arrays.equals(Mimg, new byte[0])) {
             if (arguments != null)
-                new MessageBuilder().addAttachment(captiononly(2000, 1000, "Here's your caption bro " + arguments), "Captionedimage.jpg").send(event.getChannel());
+                new MessageBuilder().append("Here is your caption bro").addAttachment(captiononly(500, 500, arguments), "Captionedimage.jpg").send(event.getChannel());
             return;
         }
         if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
