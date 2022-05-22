@@ -60,6 +60,9 @@ public class CommandDispatcherListener implements MessageCreateListener {
     @Autowired
     private NabeFactsCommandExecutor nabe;
 
+    @Autowired
+    private FortuneCommandExecutor fortune;
+
     @PostConstruct
     private void postConstruct() {
         commands.put("rateself", rateSelf);
@@ -76,6 +79,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         commands.put("facts", facts);
         commands.put("nabefact", nabe);
         commands.put("story", greenText);
+        commands.put("fortune", fortune);
         commands.put("ping", (event, args) -> event.getChannel().sendMessage("Pong!"));
         commands.put("help", (event, args) -> event.getChannel().sendMessage(
                 "You can find the currently available commands here: " +

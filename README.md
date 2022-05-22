@@ -27,8 +27,10 @@ message it has ever seen.
 
 !nabemoment = Posts a certified Nabe moment.
 
-!nabefact [keyword]= a nabe fact
+!nabefact [keyword]= a nabe fact.
 
 !bubble (right) (x pos) (y pos) + (image) = Adds a speech bubble to an image, can be configured on how it is place by adding right and different x and y coordinates.
+
+!fortune = Try your fortune.
 
 The bot can also react to certain keywords which I won't list as it's funnier to find out by oneself.
