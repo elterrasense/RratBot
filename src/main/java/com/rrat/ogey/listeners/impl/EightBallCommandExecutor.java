@@ -1,10 +1,12 @@
 package com.rrat.ogey.listeners.impl;
 
+import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
 
 @Component
+@BotCommand("8ball")
 public class EightBallCommandExecutor implements CommandExecutor {
     @Override
     public void execute(MessageCreateEvent event, String arguments) {

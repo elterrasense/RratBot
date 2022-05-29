@@ -1,6 +1,7 @@
 package com.rrat.ogey.listeners.impl;
 
 import com.rrat.ogey.components.MarkovModelComponent;
+import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import com.rrat.ogey.model.AnnotateTokenizer;
 import com.rrat.ogey.model.AnnotatedTokens;
@@ -13,6 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 
 @Component
+@BotCommand("captionfacts")
 public class CaptionFactsCommandExecutor implements CommandExecutor {
 
     @Autowired

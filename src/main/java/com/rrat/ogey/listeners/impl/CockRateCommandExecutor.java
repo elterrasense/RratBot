@@ -1,5 +1,6 @@
 package com.rrat.ogey.listeners.impl;
 
+import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
@@ -7,6 +8,7 @@ import java.text.DecimalFormat;
 import java.util.Random;
 
 @Component
+@BotCommand("cockrate")
 public class CockRateCommandExecutor implements CommandExecutor {
     private static final DecimalFormat df = new DecimalFormat("0.000");
     @Override

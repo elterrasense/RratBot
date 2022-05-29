@@ -1,5 +1,6 @@
 package com.rrat.ogey.listeners.impl;
 
+import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import com.rrat.ogey.listeners.services.MessagingService;
 import org.javacord.api.entity.message.MessageBuilder;
@@ -14,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.Random;
 
 @Component
+@BotCommand("kurimoment")
 public class MikuriMomentCommandExecutor implements CommandExecutor {
 
     @Autowired

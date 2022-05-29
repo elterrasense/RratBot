@@ -1,5 +1,6 @@
 package com.rrat.ogey.listeners.impl;
 
+import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
@@ -19,6 +20,7 @@ import java.util.*;
 
 
 @Component
+@BotCommand("caption")
 public class AddCaptionCommandExecutor implements CommandExecutor {
 
     @Override

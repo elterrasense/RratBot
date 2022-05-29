@@ -1,6 +1,7 @@
 package com.rrat.ogey.listeners.impl;
 
 import com.rrat.ogey.components.MarkovModelComponent;
+import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import com.rrat.ogey.model.AnnotateTokenizer;
 import com.rrat.ogey.model.AnnotatedToken;
@@ -18,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
+@BotCommand("nabefact")
 public class NabeFactsCommandExecutor implements CommandExecutor, MessageCreateListener {
 
     @Autowired

@@ -1,5 +1,6 @@
 package com.rrat.ogey.listeners.impl;
 
+import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
@@ -7,6 +8,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 @Component
+@BotCommand("ship")
 public class CoupleMatchExecutor implements CommandExecutor {
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
