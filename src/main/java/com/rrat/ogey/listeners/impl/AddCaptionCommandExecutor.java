@@ -15,14 +15,10 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
@@ -51,11 +47,10 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
         if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
             try {
-
-                Path GifOutput = Files.createTempFile("GifOutput-",".gif");
-                captionGif(Mimg, arguments,GifOutput);
-            new MessageBuilder().addAttachment(GifOutput.toFile()).send(event.getChannel())
-                    .thenRun(() -> GifOutput.toFile().delete());
+                byte[] caption = captionGif(Mimg, arguments);
+                new MessageBuilder()
+                        .addAttachment(caption, "caption.gif")
+                        .send(event.getChannel());
 
             } catch (IOException e) {e.printStackTrace();}
 
@@ -256,19 +251,12 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         return argcaption;
     }
 
-    private void captionGif(byte[] gifinput, String arguments, Path GifOutput) throws IOException {
-        Path GifInput = Files.createTempFile("GifInput-",".gif");
-        try {
-            FileOutputStream outputStream = new FileOutputStream(GifInput.toFile());
-            outputStream.write(gifinput);
-            outputStream.close();
-        } catch (IOException e) {e.printStackTrace();}
-        ByteSink obs = new ChannelByteSink(Files.newByteChannel(GifOutput, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING), ByteBuffer.allocate(1 << 10));
-        final ProtoEncoder encoder = new ProtoEncoder(obs);
-        new ProtoDecoder(new ChannelByteStream(
-                Files.newByteChannel(GifInput, StandardOpenOption.READ),
-                ByteBuffer.allocate(1 << 10)))
-                .accept(new ProtoVisitorDecorator(encoder) {
+    private byte[] captionGif(byte[] data, String arguments) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ByteStream ibs = ByteStream.from(data);
+        ByteSink obs = ByteSink.from(bos);
+        new ProtoDecoder(ibs)
+                .accept(new ProtoVisitorDecorator(new ProtoEncoder(obs)) {
                     private LogicalScreenDescriptor lsd;
                     boolean ColorTableOverride = false;
                     int width, height, stripeHeight;
@@ -361,8 +349,8 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         }
                     }
                 });
-        GifInput.toFile().delete();
         obs.close();
+        return bos.toByteArray();
     }
 
     private int[][] CalculateLineIndexes(byte[] colors, BufferedImage image) {
