@@ -1,0 +1,3 @@
+[submodule "genki"]
+	path = genki
+	url = https://github.com/dkz/genki.git

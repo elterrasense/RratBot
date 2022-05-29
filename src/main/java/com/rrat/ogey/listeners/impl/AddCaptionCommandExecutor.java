@@ -345,11 +345,11 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                                     ColorTableOverride ? lsd.colorTableSizeBits() : 0);
 
                             int[][] line = CalculateLineIndexes(colors, captiononly(height, width, arguments));
-                            ImageEncoder encoder = new ImageEncoder(LZW::makeEncoder, lsd, id, super.visitImage(id));
+                            ImageEncoder encoder = new ImageEncoder(DataEncoder::makeEncoder, lsd, id, super.visitImage(id));
                             if (ColorTableOverride)
                                 for (int index = 0; index < colors.length / 3; index++)
                                     encoder.visitColorTable(index, colors[3 * index], colors[3 * index + 1], colors[3 * index + 2]);
-                            return new ImageDecoder(LZW::makeDecoder, new ImageVisitorDecorator(encoder) {
+                            return new ImageDecoder(DataDecoder::makeDecoder, new ImageVisitorDecorator(encoder) {
                                 @Override
                                 public void visitDataStart() {
                                     super.visitDataStart();
