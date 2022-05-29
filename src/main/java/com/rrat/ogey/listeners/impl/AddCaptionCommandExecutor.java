@@ -2,7 +2,11 @@ package com.rrat.ogey.listeners.impl;
 
 import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
+import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageAttachment;
 import org.javacord.api.entity.message.MessageBuilder;
+import org.javacord.api.entity.message.embed.Embed;
+import org.javacord.api.entity.message.embed.EmbedThumbnail;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
 import su.dkzde.genki.*;
@@ -17,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 
 @Component
@@ -26,29 +31,103 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
         byte[] Mimg = new byte[0];
-        if (!event.getMessageAttachments().isEmpty() && event.getMessageAttachments().get(0).isImage())
-            Mimg = event.getMessageAttachments().get(0).downloadAsByteArray().join();
-        else if (event.getMessage().getReferencedMessage().isPresent() && !event.getMessage().getReferencedMessage().get().getAttachments().isEmpty()
-                && event.getMessage().getReferencedMessage().get().getAttachments().get(0).isImage())
-            Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).downloadAsByteArray().join();
-        else if (event.getMessage().getMessagesBefore(2).join().getNewestMessage().isPresent())
-            if (!event.getMessage().getMessagesBefore(2).join().getNewestMessage().get().getAttachments().isEmpty()
-                    && event.getMessage().getMessagesBefore(2).join().getNewestMessage().get().getAttachments().get(0).isImage())
-                Mimg = event.getMessage().getMessagesBefore(2).join().getNewestMessage().get().getAttachments().get(0).downloadAsByteArray().join();
+
+        if (getbytearray(event).isPresent())
+            Mimg = getbytearray(event).get().join();
 
         if (arguments == null || Arrays.equals(Mimg, new byte[0])) {
             if (arguments != null)
-                new MessageBuilder().append("Here is your caption bro").addAttachment(captiononly(500, 500, arguments), "Captionedimage.jpg").send(event.getChannel());
+                new MessageBuilder().append("Here is your caption bro")
+                        .addAttachment(captiononly(500, 500, arguments), "Captionedimage.jpg")
+                        .send(event.getChannel());
             return;
         }
+
         if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
             try {
+
                 Path GifOutput = Files.createTempFile("GifOutput-",".gif");
                 captionGif(Mimg, arguments,GifOutput);
-            new MessageBuilder().addAttachment(GifOutput.toFile()).send(event.getChannel()).thenRun(() -> GifOutput.toFile().delete());
+            new MessageBuilder().addAttachment(GifOutput.toFile()).send(event.getChannel())
+                    .thenRun(() -> GifOutput.toFile().delete());
+
             } catch (IOException e) {e.printStackTrace();}
+
         } else
-            new MessageBuilder().addAttachment(captionimage(Mimg, arguments), "Captionedimage.jpg").send(event.getChannel());
+            new MessageBuilder().addAttachment(captionimage(Mimg, arguments), "Captionedimage.jpg")
+                    .send(event.getChannel());
+    }
+
+    private Optional<CompletableFuture<byte[]>> getbytearray (MessageCreateEvent event) {
+        Optional<CompletableFuture<byte[]>> leBytes = Optional.empty();
+
+        if (!event.getMessage().getAttachments().isEmpty() && event.getMessage().getAttachments().get(0).isImage())
+            leBytes = Optional.ofNullable(event.getMessage().getAttachments().get(0).downloadAsByteArray());
+
+        if (leBytes.isEmpty())
+            leBytes = event.getMessage().getReferencedMessage()
+                    .map(Message::getAttachments)
+                    .filter(list -> !list.isEmpty())
+                    .map(messageAttachments -> messageAttachments.get(0))
+                    .filter(MessageAttachment::isImage)
+                    .map(MessageAttachment::downloadAsByteArray);
+
+        if (leBytes.isEmpty())
+            leBytes = getembed(event);
+
+        if (leBytes.isEmpty())
+            leBytes = event.getMessage().getMessagesBefore(2).join()
+                    .getNewestMessage()
+                    .map(Message::getAttachments)
+                    .filter(list -> !list.isEmpty())
+                    .map(messageAttachments -> messageAttachments.get(0))
+                    .filter(MessageAttachment::isImage)
+                    .map(MessageAttachment::downloadAsByteArray);
+
+        return leBytes;
+    }
+
+    private Optional<CompletableFuture<byte[]>> getembed (MessageCreateEvent event) {
+        Optional<Embed> embed;
+
+        embed = event.getMessage().getReferencedMessage()
+                .map(Message::getEmbeds)
+                .filter(embeds -> !embeds.isEmpty())
+                .map(embeds -> embeds.get(0));
+
+        if (embed.isEmpty())
+            embed = event.getMessage().getMessagesBefore(2).join().getNewestMessage()
+                    .map(Message::getEmbeds)
+                    .filter(embeds -> !embeds.isEmpty())
+                    .map(embeds -> embeds.get(0));
+
+        if (embed.map(Embed::getType).isPresent() && embed.map(Embed::getType).get().equals("image")) {
+            return embed.flatMap(Embed::getThumbnail)
+                    .map(EmbedThumbnail::getProxyUrl)
+                    .map(URL -> {
+                        try (InputStream is = URL.openStream()){
+                            return CompletableFuture.completedFuture(is.readAllBytes());}
+                        catch (IOException e) {e.printStackTrace();}
+                        return null;
+                    });
+        }
+        else if (embed.flatMap(Embed::getProvider).isPresent() && embed.flatMap(Embed::getProvider).get().getName().equals("Tenor")) {
+            return embed.flatMap(Embed::getThumbnail)
+                    .map(EmbedThumbnail::getProxyUrl)
+                    .map(URL -> {
+                        String tenor = URL.toString().replaceAll("(.*)com/", "");
+                        tenor = tenor.replaceAll("/(.*)", "");
+                        tenor = tenor.substring(0, tenor.length() - 1).concat("d"); //"d" for lower res, "C" for higher res
+                        tenor = "https://media.tenor.com/".concat(tenor);
+                        return tenor;})
+                    .map(String -> {
+                        try (InputStream is = new URL(String).openStream()){
+                            return CompletableFuture.completedFuture(is.readAllBytes());
+                        } catch (IOException e) {e.printStackTrace();}
+                        return null;
+                    });
+        }
+        return Optional.empty();
     }
 
     private BufferedImage captionimage(byte[] imageinput, String arguments) {
@@ -278,7 +357,6 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         GifInput.toFile().delete();
         obs.close();
     }
-
 
     private int[][] CalculateLineIndexes(byte[] colors, BufferedImage image) {
         int[][] line = new int[image.getHeight()][image.getWidth()];
