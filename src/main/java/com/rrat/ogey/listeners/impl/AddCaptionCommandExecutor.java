@@ -257,25 +257,23 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         ByteSink obs = ByteSink.from(bos);
         new ProtoDecoder(ibs)
                 .accept(new ProtoVisitorDecorator(new ProtoEncoder(obs)) {
-                    private LogicalScreenDescriptor lsd;
-                    boolean ColorTableOverride = false;
-                    int width, height, stripeHeight;
+
+                    LogicalScreenDescriptor lsd;
+                    BufferedImage caption;
+                    int imageWidth;
+                    int imageHeight;
+
+                    boolean colorTableOverride = false;
                     byte[] colors;
 
                     @Override
                     public void visitLogicalScreenDescriptor(LogicalScreenDescriptor descriptor) {
-                        super.visitLogicalScreenDescriptor(lsd = new LogicalScreenDescriptor(
-                                descriptor.logicalScreenWidth(),
-                                captiononly(descriptor.logicalScreenHeight(), descriptor.logicalScreenWidth(), arguments).getHeight()
-                                        + descriptor.logicalScreenHeight(),
-                                descriptor.globalColorTableUsed(),
-                                descriptor.colorResolution(),
-                                descriptor.colorTableSizeBits(),
-                                descriptor.backgroundColorIndex(),
-                                descriptor.pixelAspectRatio()));
-                        width = descriptor.logicalScreenWidth();
-                        height = descriptor.logicalScreenHeight();
-                        stripeHeight = captiononly(descriptor.logicalScreenHeight(), descriptor.logicalScreenWidth(), arguments).getHeight();
+                        imageHeight = descriptor.logicalScreenHeight();
+                        imageWidth = descriptor.logicalScreenWidth();
+                        caption = captiononly(imageHeight, imageWidth, arguments);
+                        super.visitLogicalScreenDescriptor(lsd = descriptor.copy()
+                                .setLogicalScreenHeight(imageHeight + caption.getHeight())
+                                .build());
                         colors = new byte[3 * lsd.colorTableSize()];
                     }
 
@@ -284,11 +282,11 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         colors[3 * index] = r;
                         colors[3 * index + 1] = g;
                         colors[3 * index + 2] = b;
-                        if (!ColorTableOverride && Arrays.equals(new int[]{Byte.toUnsignedInt(r), Byte.toUnsignedInt(g), Byte.toUnsignedInt(b)}, new int[]{0, 255, 0})) {
+                        if (!colorTableOverride && Arrays.equals(new int[]{Byte.toUnsignedInt(r), Byte.toUnsignedInt(g), Byte.toUnsignedInt(b)}, new int[]{0, 255, 0})) {
                             colors[3 * index] = -1;
                             colors[3 * index + 1] = -1;
                             colors[3 * index + 2] = -1;
-                            ColorTableOverride = true;
+                            colorTableOverride = true;
                         }
                         super.visitGlobalColorTable(index, r, g, b);
                     }
@@ -301,12 +299,12 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         if (gceframe != 1)
                             super.visitGraphicsControlExtension(extension);
                         else {
-                            super.visitGraphicsControlExtension(new GraphicsControlExtension(
-                                    (byte) 1, // Disposal Method
-                                    extension.inputFlag(),
-                                    !ColorTableOverride && extension.transparencyFlag(),
-                                    extension.delayTime(),
-                                    ColorTableOverride ? 0 : extension.transparencyIndex()));
+                            super.visitGraphicsControlExtension(
+                                    extension.copy()
+                                            .setDisposalMethod((byte) 1)
+                                            .setTransparencyFlag(!colorTableOverride && extension.transparencyFlag())
+                                            .setTransparencyIndex(colorTableOverride ? 0 : extension.transparencyIndex())
+                                            .build());
                         }
                     }
 
@@ -314,34 +312,26 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                     public ProtoImageVisitor visitImage(ImageDescriptor descriptor) {
                         ++frame;
                         if (frame != 1) {
-                            return super.visitImage(new ImageDescriptor(
-                                    descriptor.imageLeftPosition(),
-                                    stripeHeight + descriptor.imageTopPosition(),
-                                    descriptor.imageWidth(),
-                                    descriptor.imageHeight(),
-                                    descriptor.localColorTableUsed(),
-                                    descriptor.interlacingUsed(),
-                                    descriptor.colorTableSizeBits()));
+                            return super.visitImage(descriptor.copy()
+                                    .setImageTopPosition(descriptor.imageTopPosition() + caption.getHeight())
+                                    .build());
                         } else {
-                            ImageDescriptor id = new ImageDescriptor(
-                                    descriptor.imageLeftPosition(),
-                                    descriptor.imageTopPosition(),
-                                    descriptor.imageWidth(),
-                                    stripeHeight + descriptor.imageHeight(),
-                                    ColorTableOverride, //local color table used
-                                    descriptor.interlacingUsed(),
-                                    ColorTableOverride ? lsd.colorTableSizeBits() : 0);
+                            ImageDescriptor id = descriptor.copy()
+                                    .setImageHeight(descriptor.imageHeight() + caption.getHeight())
+                                    .setLocalColorTableUsed(colorTableOverride)
+                                    .setColorTableSizeBits(colorTableOverride ? lsd.colorTableSizeBits() : 0)
+                                    .build();
 
-                            int[][] line = CalculateLineIndexes(colors, captiononly(height, width, arguments));
+                            int[][] line = CalculateLineIndexes(colors, caption);
                             ImageEncoder encoder = new ImageEncoder(DataEncoder::makeEncoder, lsd, id, super.visitImage(id));
-                            if (ColorTableOverride)
+                            if (colorTableOverride)
                                 for (int index = 0; index < colors.length / 3; index++)
                                     encoder.visitColorTable(index, colors[3 * index], colors[3 * index + 1], colors[3 * index + 2]);
                             return new ImageDecoder(DataDecoder::makeDecoder, new ImageVisitorDecorator(encoder) {
                                 @Override
                                 public void visitDataStart() {
                                     super.visitDataStart();
-                                    for (int i = 0; i < stripeHeight; i++) {
+                                    for (int i = 0; i < caption.getHeight(); i++) {
                                         super.visitData(line[i]);
                                     }
                                 }
