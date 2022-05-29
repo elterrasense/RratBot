@@ -14,13 +14,18 @@ import su.dkzde.genki.*;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 
@@ -32,8 +37,9 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
     public void execute(MessageCreateEvent event, String arguments) {
         byte[] Mimg = new byte[0];
 
-        if (getbytearray(event).isPresent())
-            Mimg = getbytearray(event).get().join();
+        Optional<CompletableFuture<byte[]>> attachment = getbytearray(event);
+        if (attachment.isPresent())
+            Mimg = attachment.get().join();
 
         if (arguments == null || Arrays.equals(Mimg, new byte[0])) {
             if (arguments != null)
@@ -111,6 +117,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         return null;
                     });
         }
+
         else if (embed.flatMap(Embed::getProvider).isPresent() && embed.flatMap(Embed::getProvider).get().getName().equals("Tenor")) {
             return embed.flatMap(Embed::getThumbnail)
                     .map(EmbedThumbnail::getProxyUrl)
