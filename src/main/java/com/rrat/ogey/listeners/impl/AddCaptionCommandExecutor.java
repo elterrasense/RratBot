@@ -51,10 +51,9 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                 new MessageBuilder()
                         .addAttachment(caption, "caption.gif")
                         .send(event.getChannel());
-
             } catch (IOException e) {e.printStackTrace();}
-
-        } else
+        }
+        else
             new MessageBuilder().addAttachment(captionimage(Mimg, arguments), "Captionedimage.jpg")
                     .send(event.getChannel());
     }
@@ -138,7 +137,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
         assert bufferedImage != null;
         int imgWidth = bufferedImage.getWidth(), imgHeight = bufferedImage.getHeight(), Lines = 0, emojicount = 0;
-        Graphics2D g = (Graphics2D) bufferedImage.getGraphics();
+        Graphics2D g = bufferedImage.createGraphics();
         g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
 
         ArrayList<String> wlines = new ArrayList<>();
@@ -172,7 +171,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         wlines.add(String.valueOf(TempLine));
         g.dispose();
         BufferedImage sentimage = new BufferedImage(imgWidth, (int) (imgHeight * 1.18 + Lines * g.getFontMetrics().getHeight()), BufferedImage.TYPE_INT_RGB);
-        g = (Graphics2D) sentimage.getGraphics();
+        g = sentimage.createGraphics();
         g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
         g.drawImage(bufferedImage, 0, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()), imgWidth, imgHeight, null);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
