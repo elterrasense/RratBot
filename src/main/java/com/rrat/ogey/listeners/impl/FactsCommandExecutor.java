@@ -8,6 +8,7 @@ import com.rrat.ogey.model.AnnotatedToken;
 import com.rrat.ogey.model.AnnotatedTokens;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.channel.Channel;
+import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.MessageAuthor;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
@@ -73,8 +74,9 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
 
     @Override
     public void onMessageCreate(MessageCreateEvent ev) {
+        String channelId = ev.getChannel().getIdAsString();
         MessageAuthor author = ev.getMessageAuthor();
-        if (!author.isBotUser()) {
+        if (!author.isBotUser() && (channelId.equals("743177080258429020") || channelId.equals("823777446422773822"))) {
             String content = ev.getMessageContent();
             if (!content.startsWith("!")) {
                 AnnotateTokenizer tokenizer = AnnotateTokenizer.instance();
