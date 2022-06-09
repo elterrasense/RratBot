@@ -25,6 +25,12 @@ public final class AnnotatedTokens {
             @Override public Void onMentionToken(long id) {
                 return null;
             }
+            @Override public Void onChannelToken(long id) {
+                return null;
+            }
+            @Override public Void onRoleToken(long id) {
+                return null;
+            }
         });
         return words;
     }

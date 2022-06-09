@@ -7,7 +7,9 @@ import com.rrat.ogey.model.AnnotateTokenizer;
 import com.rrat.ogey.model.AnnotatedToken;
 import com.rrat.ogey.model.AnnotatedTokens;
 import org.javacord.api.DiscordApi;
+import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.message.MessageAuthor;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
@@ -88,6 +90,8 @@ public class NabeFactsCommandExecutor implements CommandExecutor, MessageCreateL
         DiscordApi discord = ev.getApi();
 
         final Map<Long, User> users = new HashMap<>();
+        final Map<Long, Channel> channels = new HashMap<>();
+        final Map<Long, Role> roles = new HashMap<>();
         return sequence.stream()
                 .filter(token -> token.handle(new AnnotatedToken.Handler<>() {
                     @Override
@@ -120,6 +124,18 @@ public class NabeFactsCommandExecutor implements CommandExecutor, MessageCreateL
                         mentioned.ifPresent(user -> users.put(id, user));
                         return mentioned.isPresent();
                     }
+                    @Override
+                    public Boolean onChannelToken(long id) {
+                        Optional<Channel> optional = discord.getChannelById(id);
+                        optional.ifPresent(channel -> channels.put(id, channel));
+                        return optional.isPresent();
+                    }
+                    @Override
+                    public Boolean onRoleToken(long id) {
+                        Optional<Role> optional = discord.getRoleById(id);
+                        optional.ifPresent(role -> roles.put(id, role));
+                        return optional.isPresent();
+                    }
                 }))
                 .map(token -> token.handle(new AnnotatedToken.Handler<String>() {
                     @Override
@@ -142,6 +158,16 @@ public class NabeFactsCommandExecutor implements CommandExecutor, MessageCreateL
                     public String onMentionToken(long id) {
                         User user = users.get(id);
                         return user.getName();
+                    }
+                    @Override
+                    public String onChannelToken(long id) {
+                        Channel channel = channels.get(id);
+                        return channel.toString().substring(channel.toString().indexOf("name:") + 6,channel.toString().length()-1);
+                    }
+                    @Override
+                    public String onRoleToken(long id) {
+                        Role role = roles.get(id);
+                        return role.getName();
                     }
                 }))
                 .toList();

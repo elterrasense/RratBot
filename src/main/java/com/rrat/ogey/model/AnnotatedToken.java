@@ -11,6 +11,8 @@ public abstract class AnnotatedToken {
         O onPunctuationToken(String text);
         O onEmoteToken(String text, String name, long id);
         O onMentionToken(long id);
+        O onChannelToken(long id);
+        O onRoleToken(long id);
     }
 
     public abstract String asText();
@@ -31,6 +33,18 @@ public abstract class AnnotatedToken {
 
     public static AnnotatedToken mention(String text, long id) {
         return new MentionTokenCase(
+                Objects.requireNonNull(text),
+                id);
+    }
+
+    public static AnnotatedToken channel(String text, long id) {
+        return new ChannelTokenCase(
+                Objects.requireNonNull(text),
+                id);
+    }
+
+    public static AnnotatedToken role(String text, long id) {
+        return new RoleTokenCase(
                 Objects.requireNonNull(text),
                 id);
     }
@@ -125,4 +139,41 @@ public abstract class AnnotatedToken {
             return "AnnotatedToken.mention[" + id  + "]";
         }
     }
+
+    private static final class RoleTokenCase extends AnnotatedToken {
+        private final String text;
+        private final long id;
+        private RoleTokenCase(String text, long id) {
+            this.text = text;
+            this.id = id;
+        }
+        @Override public <O> O handle(Handler<O> handler) {
+            return handler.onRoleToken(id);
+        }
+        @Override public String asText() {
+            return text;
+        }
+        @Override public String toString() {
+            return "AnnotatedToken.role[" + id  + "]";
+        }
+    }
+
+    private static final class ChannelTokenCase extends AnnotatedToken {
+        private final String text;
+        private final long id;
+        private ChannelTokenCase(String text, long id) {
+            this.text = text;
+            this.id = id;
+        }
+        @Override public <O> O handle(Handler<O> handler) {
+            return handler.onChannelToken(id);
+        }
+        @Override public String asText() {
+            return text;
+        }
+        @Override public String toString() {
+            return "AnnotatedToken.channel[" + id  + "]";
+        }
+    }
+
 }

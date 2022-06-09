@@ -74,6 +74,10 @@ public final class AnnotateTokenizer {
                 mention_annotation_pass,
                 // Locate and annotate discord emotes
                 emote_annotation_pass,
+                // Locate and annotate discord channels
+                channel_annotation_pass,
+                // Locate and annotate discord roles
+                role_annotation_pass,
                 // Split newlines and insert newline tokens
                 newline_split_pass,
                 // Locate words in the text and extract word tokens
@@ -176,6 +180,22 @@ public final class AnnotateTokenizer {
             tokenizeByPattern(pt_mention, text, matcher ->
                     new TokenizerSequence.Token(
                             AnnotatedToken.mention(
+                                    matcher.group(),
+                                    Long.parseLong(matcher.group("id")))));
+
+    private static final Pattern pt_channel = Pattern.compile("<#(?<id>\\d+)>");
+    private static final TokenizerPass channel_annotation_pass = text ->
+            tokenizeByPattern(pt_channel, text, matcher ->
+                    new TokenizerSequence.Token(
+                            AnnotatedToken.channel(
+                                    matcher.group(),
+                                    Long.parseLong(matcher.group("id")))));
+
+    private static final Pattern pt_role = Pattern.compile("<@&(?<id>\\d+)>");
+    private static final TokenizerPass role_annotation_pass = text ->
+            tokenizeByPattern(pt_role, text, matcher ->
+                    new TokenizerSequence.Token(
+                            AnnotatedToken.role(
                                     matcher.group(),
                                     Long.parseLong(matcher.group("id")))));
 
