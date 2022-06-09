@@ -168,7 +168,6 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                     @Override
                     public String onRoleToken(long id) {
                         Role role = roles.get(id);
-                        System.out.println(role.getName());
                         return role.getName();
                     }
                 }))
