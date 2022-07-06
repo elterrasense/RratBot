@@ -21,7 +21,7 @@ message it has ever seen.
 
 !caption [sentence] / !captionfacts + (image/gif)/(reply to an image) = Adds the sentence/fact as a caption to the image/gif.
 
-!wheremikuri = Tells you exactly where on earth Mikuri is.
+!wherekuri = Tells you exactly where on earth Mikuri is.
 
 !kurimoment = Posts a certified Mikuri moment.
 
