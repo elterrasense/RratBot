@@ -1,9 +1,10 @@
 package com.rrat.ogey;
 
-import com.rrat.ogey.components.MarkovModelComponent;
+
 import com.rrat.ogey.listeners.CommandDispatcherListener;
 import com.rrat.ogey.listeners.KeywordListener;
 import com.rrat.ogey.listeners.impl.FactsCommandExecutor;
+import com.rrat.ogey.listeners.impl.ServerCrosspostCommandExecutor;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.activity.ActivityType;
@@ -29,6 +30,9 @@ public class RratBotApplication {
 	private KeywordListener keywordListener;
 
 	@Autowired
+	private ServerCrosspostCommandExecutor crosspost;
+
+	@Autowired
 	private FactsCommandExecutor facts;
 
 	public static void main(String[] args) {
@@ -48,6 +52,8 @@ public class RratBotApplication {
 		api.addMessageCreateListener(commandDispatcherListener);
 		api.addMessageCreateListener(keywordListener);
 		api.addMessageCreateListener(facts);
+		api.addMessageCreateListener(crosspost);
+		api.addReactionAddListener(crosspost);
 
 		return api;
 	}

@@ -1,5 +1,8 @@
 package com.rrat.ogey.listeners;
 
+import com.rrat.ogey.components.ServerIDnCommand;
+import com.rrat.ogey.listeners.impl.CommandPermissionExecutor;
+import com.rrat.ogey.listeners.impl.ServerCrosspostCommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +38,8 @@ public class CommandDispatcherListener implements MessageCreateListener {
         registry.put("help", (event, args) -> event.getChannel().sendMessage(
                 "You can find the currently available commands here: " +
                         "<https://github.com/elterrasense/RratBot/blob/main/README.md#currently-available-commands>"));
+        CommandPermissionExecutor.load();
+        ServerCrosspostCommandExecutor.load();
     }
 
     @Override
@@ -43,7 +48,8 @@ public class CommandDispatcherListener implements MessageCreateListener {
         Matcher matcher = CMD_PATTERN.matcher(text);
         if (matcher.matches()) {
             CommandExecutor executor = registry.get(matcher.group("command"));
-            if (executor != null) {
+            if (executor != null && ev.isServerMessage()) { //Make commands not work in DMs.
+                if (CommandPermissionExecutor.check(new ServerIDnCommand(ev.getServer().get().getIdAsString(),matcher.group("command")),ev))
                 executor.execute(ev, matcher.group("arguments"));
             }
         }

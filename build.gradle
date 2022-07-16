@@ -22,7 +22,7 @@ dependencies {
 }
 
 group = 'com.rrat'
-version = '1.6.4'
+version = '1.6.5'
 description = 'RratBot'
 sourceCompatibility = '17'
 
