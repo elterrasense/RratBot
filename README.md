@@ -33,6 +33,8 @@ message it has ever seen.
 
 !fortune = Try your fortune.
 
+!steal = steals an emoji/sticker from the referenced message.
+
 !watamelon = Posts a random watamelon.
 
 The bot can also react to certain keywords which I won't list as it's funnier to find out by oneself.
