@@ -5,15 +5,15 @@ import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
 import org.javacord.api.entity.emoji.CustomEmojiBuilder;
 import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.sticker.StickerFormatType;
 import org.javacord.api.entity.sticker.StickerItem;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +36,7 @@ public class EmojiStealCommandExecutor implements CommandExecutor {
         if (matcher.matches()) {
             String emojiname = matcher.group("name");
             String emojilink = "https://cdn.discordapp.com/emojis/" + matcher.group("id") + (matcher.group("animated") != null ? ".gif" : ".png");
-            if (event.getMessageAuthor().canManageEmojisOnServer()) {
+            if (event.getMessageAuthor().canManageEmojisOnServer() && event.getServer().map(Server::canYouManageEmojis).orElse(false)) {
                 CustomEmojiBuilder emojiBuilder = event.getServer().get().createCustomEmojiBuilder();
                 try {
                     emojiBuilder.setName(emojiname)
@@ -45,15 +45,14 @@ public class EmojiStealCommandExecutor implements CommandExecutor {
                 } catch (MalformedURLException e) {e.printStackTrace();}
             }
             else{
-                event.getChannel()
-                        .sendMessage(emojilink);
+                event.getChannel().sendMessage(emojilink);
             }
         }
-        Optional<String> sticker = reference
-                .map(Message::getStickerItems)
-                .map(Set::iterator)
-                .map(Iterator::next)
-                .map(StickerItem::getIdAsString);
-        sticker.ifPresent(string -> event.getChannel().sendMessage("https://media.discordapp.net/stickers/" + string + ".png"));
+        if (reference.isPresent())
+            for (StickerItem sticker : reference.get().getStickerItems())
+                if (sticker.getFormatType() == StickerFormatType.PNG || sticker.getFormatType() == StickerFormatType.APNG) {
+                    event.getChannel().sendMessage("https://media.discordapp.net/stickers/" + sticker.getIdAsString() + ".png");
+                }
+
     }
 }
