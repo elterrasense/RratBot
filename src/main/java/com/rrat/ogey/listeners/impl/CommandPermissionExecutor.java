@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 @BotCommand("commands")
 public class CommandPermissionExecutor implements CommandExecutor {
 
-    private static final Pattern pt_all = Pattern.compile("<?(?<prefix>[#@]?&?)(?<id>\\d{18})>?");
+    private static final Pattern pt_all = Pattern.compile("<?(?<prefix>[#@]?&?)(?<id>\\d+)>?");
     private static final ArrayList<String> deniedservers = new ArrayList<>(2);
     private static final ConcurrentHashMap<ServerIDnCommand, CommandPermissions> permissionsHashMap = new ConcurrentHashMap<>();
 
