@@ -82,7 +82,8 @@ public class EmbedCommandExecutor implements MessageCreateListener, CommandExecu
                         webhook.addEmbed(messageembed);
                         if (message.getEmbeds().size() < 3)
                             for (Embed embed : message.getEmbeds())
-                                webhook.addEmbed(embed.toBuilder());
+                                if (embed.getType().equals("rich"))
+                                    webhook.addEmbed(embed.toBuilder());
                     }
                 }
                 ev.deleteMessage();
@@ -118,9 +119,9 @@ public class EmbedCommandExecutor implements MessageCreateListener, CommandExecu
             return createdwebhook.get().getUrl().toString();
         else {
             WebhookBuilder webhookBuilder = new WebhookBuilder(event.getChannel().asServerTextChannel().orElse(null));
-            webhookBuilder.setAvatar(event.getApi().getYourself().getAvatar());
-            webhookBuilder.setName("Embed-webhook");
-            webhookBuilder.setAuditLogReason("Webhook to create embeds");
+            webhookBuilder.setAvatar(event.getApi().getYourself().getAvatar())
+                    .setName("Embed-webhook")
+                    .setAuditLogReason("Webhook to create embeds");
             IncomingWebhook incwebhook = webhookBuilder.create().join();
             return incwebhook.getUrl().toString();
         }
