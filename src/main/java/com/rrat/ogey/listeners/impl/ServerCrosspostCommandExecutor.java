@@ -66,9 +66,9 @@ public class ServerCrosspostCommandExecutor implements CommandExecutor,MessageCr
                         webhookurl = createdwebhook.get().getUrl().toString();
                     } else {
                         WebhookBuilder webhookBuilder = new WebhookBuilder(event.getChannel().asServerTextChannel().orElse(null));
-                        webhookBuilder.setAvatar(event.getApi().getYourself().getAvatar());
-                        webhookBuilder.setName("Copy-webhook");
-                        webhookBuilder.setAuditLogReason("So yeah");
+                        webhookBuilder.setAvatar(event.getApi().getYourself().getAvatar())
+                                .setName("Copy-webhook")
+                                .setAuditLogReason("So yeah");
                         IncomingWebhook incwebhook = webhookBuilder.create().join();
                         webhookurl = incwebhook.getUrl().toString();
                     }
@@ -181,7 +181,6 @@ public class ServerCrosspostCommandExecutor implements CommandExecutor,MessageCr
             ev.getApi()
                     .getTextChannelById(getChannelMirror(ev.getChannel().getIdAsString()))
                     .ifPresent(messagetosend::send);
-        ev.deleteMessage();
     }
 
     private static void save() {
@@ -227,8 +226,6 @@ public class ServerCrosspostCommandExecutor implements CommandExecutor,MessageCr
         for (StickerItem sticker : msg.getStickerItems())
             if (sticker.getFormatType() == StickerFormatType.PNG || sticker.getFormatType() == StickerFormatType.APNG) {
                 messagecontent = messagecontent.concat("\nhttps://media.discordapp.net/stickers/" + sticker.getIdAsString() + ".png");
-                if (sticker.getFormatType() == StickerFormatType.APNG)
-                    messagecontent = messagecontent.concat(" (.apng sticker so playback in discord won't work)");
             }
         if (messagecontent.equals(""))
             messagecontent = "*Sticker/Nothing*";

@@ -3,6 +3,7 @@ package com.rrat.ogey;
 
 import com.rrat.ogey.listeners.CommandDispatcherListener;
 import com.rrat.ogey.listeners.KeywordListener;
+import com.rrat.ogey.listeners.impl.BorderCommandExecutor;
 import com.rrat.ogey.listeners.impl.EmbedCommandExecutor;
 import com.rrat.ogey.listeners.impl.FactsCommandExecutor;
 import com.rrat.ogey.listeners.impl.ServerCrosspostCommandExecutor;
@@ -37,6 +38,9 @@ public class RratBotApplication {
 	private FactsCommandExecutor facts;
 
 	@Autowired
+	private BorderCommandExecutor border;
+
+	@Autowired
 	private EmbedCommandExecutor embeds;
 
 	public static void main(String[] args) {
@@ -59,6 +63,7 @@ public class RratBotApplication {
 		api.addMessageCreateListener(crosspost);
 		api.addReactionAddListener(crosspost);
 		api.addMessageCreateListener(embeds);
+		api.addMessageCreateListener(border);
 
 		return api;
 	}
