@@ -19,7 +19,10 @@ import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.springframework.stereotype.Component;
 
+import java.io.*;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +34,10 @@ import java.util.regex.Pattern;
 public class BorderCommandExecutor implements CommandExecutor,MessageCreateListener {
 
     private static final Pattern pt_webhook = Pattern.compile("https://discord.com/api/webhooks/\\d{18}/.+");
-    private String mainserver = null;
-    private String webhookurl = null;
-    private String mainchannel = null;
-    private String borderchannel = null;
+    private static String mainserver = null;
+    private static String webhookurl = null;
+    private static String mainchannel = null;
+    private static String borderchannel = null;
     private final LinkedHashMap<String, String> messagemirror = new LinkedHashMap<>() {
         protected boolean removeEldestEntry(Map.Entry eldest) {
             return size() > 201;
@@ -68,10 +71,10 @@ public class BorderCommandExecutor implements CommandExecutor,MessageCreateListe
                         webhookurl = incwebhook.getUrl().toString();
                     }
                     mainserver = event.getServer().get().getIdAsString();
+                    mainchannel = event.getChannel().getIdAsString();
                 }
                 case "border" -> borderchannel = args[1];
-                case "relay" -> mainchannel = args[1];
-
+                case "save" -> save();
             }
         }
     }
@@ -79,7 +82,7 @@ public class BorderCommandExecutor implements CommandExecutor,MessageCreateListe
 
     @Override
     public void onMessageCreate(MessageCreateEvent ev) {
-        if (webhookurl != null && ev.getMessageAuthor().isRegularUser() && ev.getChannel().getIdAsString().equals(borderchannel) ) {
+        if (webhookurl != null && ev.getMessageAuthor().isRegularUser() && ev.getChannel().getIdAsString().equals(borderchannel)) {
             String url = webhookurl;
             String channeloverride = mainchannel;
             String displayname = ev.getMessageAuthor().getDisplayName();
@@ -110,7 +113,7 @@ public class BorderCommandExecutor implements CommandExecutor,MessageCreateListe
             msg = webhookMessageBuilder.send(ev.getApi(), url).join();
             messagemirror.put(message.getIdAsString(), msg.getIdAsString());
         }
-        else if (webhookurl != null && ev.getChannel().getIdAsString().equals(mainchannel) && ev.getMessageAuthor().isRegularUser()){
+        else if (webhookurl != null && ev.getChannel().getIdAsString().equals(mainchannel) && ev.getMessageAuthor().isRegularUser() && !ev.getMessageContent().startsWith("!")){
             sendmessage(ev);
         }
     }
@@ -166,5 +169,37 @@ public class BorderCommandExecutor implements CommandExecutor,MessageCreateListe
         if (messagecontent.equals(""))
             messagecontent = "*Sticker/Nothing*";
         return messagecontent;
+    }
+
+    private static void save() {
+        try {
+            Path path = Paths.get(System.getProperty("user.home"), ".border-settings.obj");
+            FileOutputStream fos = new FileOutputStream(path.toFile());
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(mainserver);
+            oos.writeObject(webhookurl);
+            oos.writeObject(mainchannel);
+            oos.writeObject(borderchannel);
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    public static void load(){
+        try {
+            Path path = Paths.get(System.getProperty("user.home"), ".border-settings.obj");
+            if (path.toFile().exists()) {
+                FileInputStream fis = new FileInputStream(path.toFile());
+                ObjectInputStream ois = new ObjectInputStream(fis);
+                mainserver = (String) ois.readObject();
+                webhookurl = (String) ois.readObject();
+                mainchannel = (String) ois.readObject();
+                borderchannel = (String) ois.readObject();
+            }
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.rrat.ogey.listeners;
 
 import com.rrat.ogey.components.ServerIDnCommand;
+import com.rrat.ogey.listeners.impl.BorderCommandExecutor;
 import com.rrat.ogey.listeners.impl.CommandPermissionExecutor;
 import com.rrat.ogey.listeners.impl.ServerCrosspostCommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
@@ -40,6 +41,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
                         "<https://github.com/elterrasense/RratBot/blob/main/README.md#currently-available-commands>"));
         CommandPermissionExecutor.load();
         ServerCrosspostCommandExecutor.load();
+        BorderCommandExecutor.load();
     }
 
     @Override
