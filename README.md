@@ -37,4 +37,6 @@ message it has ever seen.
 
 !watamelon = Posts a random watamelon.
 
+!ayame = Posts how long has it been since the last time Nakiri Ayame streamed in days.
+
 The bot can also react to certain keywords which I won't list as it's funnier to find out by oneself.
