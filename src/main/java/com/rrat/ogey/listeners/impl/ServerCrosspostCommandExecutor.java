@@ -221,6 +221,8 @@ public class ServerCrosspostCommandExecutor implements CommandExecutor,MessageCr
                 .map(URL::toString)
                 .toArray(String[]::new);
         String messagecontent = msg.getContent();
+        if (messagecontent == null)
+            messagecontent = "";
         for (String url : urls)
             messagecontent = messagecontent.concat("\n" + url);
         for (StickerItem sticker : msg.getStickerItems())

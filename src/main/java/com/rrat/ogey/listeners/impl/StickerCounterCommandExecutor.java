@@ -35,18 +35,16 @@ public class StickerCounterCommandExecutor implements CommandExecutor, MessageCr
                 List<stickerinfo> stickerlist = idtosticker.values().stream().sorted(new StickerSort()).toList();
                 EmbedBuilder embed = new EmbedBuilder();
                 StringBuilder names = new StringBuilder();
-                StringBuilder ids = new StringBuilder();
                 StringBuilder timesused = new StringBuilder();
                 int max = 0;
                 for (stickerinfo stickerinfo : stickerlist){
                     if (max > 60)
                         break;
-                    names.append(stickerinfo.name).append("\n");
-                    ids.append(stickerinfo.id).append("\n");
+                    names.append("[").append(stickerinfo.name).append("](https://media.discordapp.net/stickers/").append(stickerinfo.id).append(".png)").append("\n");
                     timesused.append(stickerinfo.usage).append("\n");
                     max++;
                 }
-                embed.addInlineField("Name", names.toString()).addInlineField("Times Used", timesused.toString()).addInlineField("ID", ids.toString());
+                embed.addInlineField("Name", names.toString()).addInlineField("Times Used", timesused.toString());
                 MessageBuilder message = new MessageBuilder();
                 message.addEmbed(embed).replyTo(event.getMessage()).send(event.getChannel());
             }
