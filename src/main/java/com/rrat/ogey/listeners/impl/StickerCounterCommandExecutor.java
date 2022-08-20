@@ -5,6 +5,7 @@ import com.rrat.ogey.listeners.CommandExecutor;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.sticker.Sticker;
 import org.javacord.api.entity.sticker.StickerItem;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
@@ -14,7 +15,9 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -31,7 +34,7 @@ public class StickerCounterCommandExecutor implements CommandExecutor, MessageCr
         String[] args = arguments.split(" ");
         switch (args[0]) {
             case "id" -> serverid = event.getServer().map(DiscordEntity::getIdAsString).orElse("1");
-            case "list" -> {
+            case "leaderboard" -> {
                 List<stickerinfo> stickerlist = idtosticker.values().stream().sorted(new StickerSort()).toList();
                 EmbedBuilder embed = new EmbedBuilder();
                 StringBuilder names = new StringBuilder();
@@ -52,6 +55,40 @@ public class StickerCounterCommandExecutor implements CommandExecutor, MessageCr
                 if (event.getMessageAuthor().canManageRolesOnServer())
                     idtosticker.clear();
             }
+            case "list" -> {
+                Set<Sticker> unusedstickers = new HashSet<>();
+                Set<Sticker> stickers = event.getServer().get().getStickers();
+                for (Sticker sticker : stickers){
+                    if (!idtosticker.containsKey(sticker.getIdAsString())){
+                        unusedstickers.add(sticker); //Add stickers that haven't been used at all in a separate category
+                    }
+                }
+                List<String> idlist = stickers.stream().map(Sticker::getIdAsString).toList();
+                List<stickerinfo> stickerlist = idtosticker.values().stream().filter(stickerinfo -> idlist.contains(stickerinfo.id)).sorted(new StickerSort().reversed()).toList();
+                EmbedBuilder embed = new EmbedBuilder();
+                StringBuilder names = new StringBuilder();
+                StringBuilder timesused = new StringBuilder();
+                MessageBuilder message = new MessageBuilder();
+                int max = 0;
+                for (stickerinfo stickerinfo : stickerlist){
+                    if (max > 12)
+                        break;
+                    names.append("[").append(stickerinfo.name).append("](https://media.discordapp.net/stickers/").append(stickerinfo.id).append(".png)").append("\n");
+                    timesused.append(stickerinfo.usage).append("\n");
+                    max++;
+                }
+                if (!unusedstickers.isEmpty()){
+                    EmbedBuilder embed2 = new EmbedBuilder();
+                    StringBuilder unusednames = new StringBuilder();
+                    for (Sticker sticker : unusedstickers){
+                        unusednames.append("[").append(sticker.getName()).append("](https://media.discordapp.net/stickers/").append(sticker.getIdAsString()).append(".png)").append("\n");
+                    }
+                    embed2.setTitle("Unused Stickers Since Last Clear").setDescription(unusednames.toString());
+                    message.addEmbed(embed2);
+                }
+                embed.setTitle("Least Used Stickers").addInlineField("Name", names.toString()).addInlineField("Times Used", timesused.toString());
+                message.addEmbed(embed).replyTo(event.getMessage()).send(event.getChannel());
+            }
         }
     }
 
@@ -64,7 +101,7 @@ public class StickerCounterCommandExecutor implements CommandExecutor, MessageCr
                 stick.usage++;
             }
             savecheck++;
-            if (savecheck > 15){
+            if (savecheck > 20){
                 save();
                 savecheck = 0;
             }
@@ -100,6 +137,7 @@ public class StickerCounterCommandExecutor implements CommandExecutor, MessageCr
             throw new RuntimeException(exception);
         }
     }
+
     @SuppressWarnings("unchecked")
     public static void load(){
         try {
