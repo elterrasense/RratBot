@@ -4,6 +4,7 @@ import com.rrat.ogey.components.ServerIDnCommand;
 import com.rrat.ogey.listeners.impl.BorderCommandExecutor;
 import com.rrat.ogey.listeners.impl.CommandPermissionExecutor;
 import com.rrat.ogey.listeners.impl.ServerCrosspostCommandExecutor;
+import com.rrat.ogey.listeners.impl.StickerCounterCommandExecutor;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,7 @@ public class CommandDispatcherListener implements MessageCreateListener {
         CommandPermissionExecutor.load();
         ServerCrosspostCommandExecutor.load();
         BorderCommandExecutor.load();
+        StickerCounterCommandExecutor.load();
     }
 
     @Override

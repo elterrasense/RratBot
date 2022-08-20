@@ -3,10 +3,7 @@ package com.rrat.ogey;
 
 import com.rrat.ogey.listeners.CommandDispatcherListener;
 import com.rrat.ogey.listeners.KeywordListener;
-import com.rrat.ogey.listeners.impl.BorderCommandExecutor;
-import com.rrat.ogey.listeners.impl.EmbedCommandExecutor;
-import com.rrat.ogey.listeners.impl.FactsCommandExecutor;
-import com.rrat.ogey.listeners.impl.ServerCrosspostCommandExecutor;
+import com.rrat.ogey.listeners.impl.*;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.activity.ActivityType;
@@ -43,6 +40,9 @@ public class RratBotApplication {
 	@Autowired
 	private EmbedCommandExecutor embeds;
 
+	@Autowired
+	private StickerCounterCommandExecutor stickers;
+
 	public static void main(String[] args) {
 		SpringApplication.run(RratBotApplication.class, args);
 	}
@@ -64,6 +64,7 @@ public class RratBotApplication {
 		api.addReactionAddListener(crosspost);
 		api.addMessageCreateListener(embeds);
 		api.addMessageCreateListener(border);
+		api.addMessageCreateListener(stickers);
 
 		return api;
 	}
