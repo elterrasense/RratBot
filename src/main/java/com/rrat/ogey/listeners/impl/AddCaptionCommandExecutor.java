@@ -6,6 +6,7 @@ import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageAttachment;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.embed.Embed;
+import org.javacord.api.entity.message.embed.EmbedProvider;
 import org.javacord.api.entity.message.embed.EmbedThumbnail;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
@@ -14,20 +15,24 @@ import su.dkzde.genki.*;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Component
 @BotCommand("caption")
 public class AddCaptionCommandExecutor implements CommandExecutor {
+
+    private static final Pattern pt_vidextensions = Pattern.compile(".*(?<extension>(\\.mp4)|(\\.mov)|(\\.webm))$");
+    private static final Pattern pt_emoji = Pattern.compile("<(a)?:(?<name>\\w+):(?<id>\\d+)>");
+    private int vidwidth;
+    private int vidheight;
 
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
@@ -44,14 +49,64 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         .send(event.getChannel());
             return;
         }
+        boolean isvideo = Arrays.equals(Arrays.copyOfRange(Mimg, 4, 7), new byte[]{-97, 66, -122}) | Arrays.equals(Arrays.copyOfRange(Mimg, 4, 7), new byte[]{102, 116, 121});
+        boolean iswebm = Arrays.equals(Arrays.copyOfRange(Mimg, 4, 7), new byte[]{-97, 66, -122});
 
-        if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
+
+        if (isvideo) {
+            try {
+                File inputfile;
+                if (iswebm)
+                    inputfile = File.createTempFile("download", ".webm");
+                else
+                    inputfile = File.createTempFile("download", ".mp4");
+                File outputfile = File.createTempFile("finished", ".mp4");
+                File captionfile = File.createTempFile("caption", ".jpg");
+                FileOutputStream fos = new FileOutputStream(inputfile);
+                fos.write(Mimg);
+                fos.close();
+                BufferedImage caption = captiononly(vidheight, vidwidth, arguments);
+                ImageIO.write(caption, "jpg", captionfile);
+                ProcessBuilder processBuilder = new ProcessBuilder("ffmpeg", "-y", "-v", "error", "-i", inputfile.getAbsolutePath().replaceAll("\\\\", "/"), "-i", captionfile.getAbsolutePath().replaceAll("\\\\", "/"), "-filter_complex", "[0:v] pad=width=iw:height=ih+" + caption.getHeight() + ":x=0:y=" + caption.getHeight() + "[padded];[padded][1:v]overlay=0.0", outputfile.getAbsolutePath().replaceAll("\\\\", "/"));
+                Process process;
+                process = processBuilder.start();
+                process.waitFor();
+                captionfile.delete();
+                inputfile.delete();
+                if (process.exitValue() == 0)
+                    new MessageBuilder().addAttachment(outputfile)
+                            .send(event.getChannel()).thenRun(outputfile::delete);
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        else if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
             try {
                 byte[] caption = captionGif(Mimg, arguments);
                 new MessageBuilder()
                         .addAttachment(caption, "caption.gif")
                         .send(event.getChannel());
-            } catch (IOException e) {e.printStackTrace();}
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else if (Arrays.equals(Arrays.copyOf(Mimg,4),new byte[]{82,73,70,70})) { //Checks if it's a .webp file
+            try {
+                File webpfile = File.createTempFile("webp-dl", ".webp");
+                FileOutputStream fos = new FileOutputStream(webpfile);
+                fos.write(Mimg);
+                fos.close();
+                File jpgfile = File.createTempFile("to-jpg",".jpg");
+                ProcessBuilder processBuilder = new ProcessBuilder("ffmpeg","-y","-v","error","-i", webpfile.getAbsolutePath().replaceAll("\\\\","/"),jpgfile.getAbsolutePath().replaceAll("\\\\","/"));
+                Process process;
+                process = processBuilder.start();
+                process.waitFor();
+                webpfile.delete();
+                FileInputStream fin = new FileInputStream(jpgfile);
+                if (process.exitValue() == 0)
+                    new MessageBuilder().addAttachment(captionimage(fin.readAllBytes(),arguments),"CaptionedImage.jpg")
+                            .send(event.getChannel()).thenRun(jpgfile::delete);
+            } catch (IOException | InterruptedException e) {e.printStackTrace();}
         }
         else
             new MessageBuilder().addAttachment(captionimage(Mimg, arguments), "Captionedimage.jpg")
@@ -60,29 +115,42 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
     private Optional<CompletableFuture<byte[]>> getbytearray (MessageCreateEvent event) {
         Optional<CompletableFuture<byte[]>> leBytes = Optional.empty();
+        Message message = event.getMessage();
 
-        if (!event.getMessage().getAttachments().isEmpty() && event.getMessage().getAttachments().get(0).isImage())
-            leBytes = Optional.ofNullable(event.getMessage().getAttachments().get(0).downloadAsByteArray());
+        if (!message.getAttachments().isEmpty()) {
+            MessageAttachment messageAttachment = message.getAttachments().get(0);
+            if (messageAttachment.isImage() || messageAttachment.getFileName().matches(pt_vidextensions.pattern())) {
+                vidheight = messageAttachment.getHeight().orElse(200);
+                vidwidth = messageAttachment.getWidth().orElse(200);
+                leBytes = Optional.ofNullable(messageAttachment.downloadAsByteArray());
+            }
+        }
 
         if (leBytes.isEmpty())
-            leBytes = event.getMessage().getReferencedMessage()
+            leBytes = message.getReferencedMessage()
                     .map(Message::getAttachments)
                     .filter(list -> !list.isEmpty())
                     .map(messageAttachments -> messageAttachments.get(0))
-                    .filter(MessageAttachment::isImage)
-                    .map(MessageAttachment::downloadAsByteArray);
+                    .filter(messageAttachment -> messageAttachment.isImage() || messageAttachment.getFileName().matches(pt_vidextensions.pattern()))
+                    .map(messageAttachment -> {
+                        vidheight = messageAttachment.getHeight().orElse(200);
+                        vidwidth = messageAttachment.getWidth().orElse(200);
+                        return messageAttachment.downloadAsByteArray();});
 
         if (leBytes.isEmpty())
             leBytes = getembed(event);
 
         if (leBytes.isEmpty())
-            leBytes = event.getMessage().getMessagesBefore(2).join()
+            leBytes = message.getMessagesBefore(2).join()
                     .getNewestMessage()
                     .map(Message::getAttachments)
                     .filter(list -> !list.isEmpty())
                     .map(messageAttachments -> messageAttachments.get(0))
-                    .filter(MessageAttachment::isImage)
-                    .map(MessageAttachment::downloadAsByteArray);
+                    .filter(messageAttachment -> messageAttachment.isImage() || messageAttachment.getFileName().matches(pt_vidextensions.pattern()))
+                    .map(messageAttachment -> {
+                        vidheight = messageAttachment.getHeight().orElse(200);
+                        vidwidth = messageAttachment.getWidth().orElse(200);
+                        return messageAttachment.downloadAsByteArray();});
 
         return leBytes;
     }
@@ -101,18 +169,28 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                     .filter(embeds -> !embeds.isEmpty())
                     .map(embeds -> embeds.get(0));
 
-        if (embed.map(Embed::getType).isPresent() && embed.map(Embed::getType).get().equals("image")) {
+        if (embed.map(Embed::getType).orElse("nothing").equals("image"))
             return embed.flatMap(Embed::getThumbnail)
                     .map(EmbedThumbnail::getProxyUrl)
                     .map(URL -> {
                         try (InputStream is = URL.openStream()){
                             return CompletableFuture.completedFuture(is.readAllBytes());}
                         catch (IOException e) {e.printStackTrace();}
-                        return null;
-                    });
-        }
+                        return null;});
 
-        else if (embed.flatMap(Embed::getProvider).isPresent() && embed.flatMap(Embed::getProvider).get().getName().equals("Tenor")) {
+        if (embed.map(Embed::getType).orElse("nothing").equals("video") && embed.flatMap(Embed::getUrl).map(URL::toString).orElse("nothing").matches("(https://)(cdn.discordapp.com|media.discordapp.net)/attachments/.*"))
+            return embed.flatMap(Embed::getVideo)
+                    .map(embedVideo -> {
+                        vidheight = embedVideo.getHeight();
+                        vidwidth = embedVideo.getWidth();
+                        return embedVideo.getUrl();})
+                    .map(URL -> {
+                        try (InputStream is = URL.openStream()){
+                            return CompletableFuture.completedFuture(is.readAllBytes());}
+                        catch (IOException e) {e.printStackTrace();}
+                        return null;});
+
+        else if (embed.flatMap(Embed::getProvider).map(EmbedProvider::getName).orElse("noprovider").equals("Tenor")) {
             return embed.flatMap(Embed::getThumbnail)
                     .map(EmbedThumbnail::getProxyUrl)
                     .map(URL -> {
@@ -136,87 +214,49 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         try {bufferedImage = ImageIO.read(new ByteArrayInputStream(imageinput));} catch (IOException e) {e.printStackTrace();}
 
         assert bufferedImage != null;
-        int imgWidth = bufferedImage.getWidth(), imgHeight = bufferedImage.getHeight(), Lines = 0, emojicount = 0;
-        Graphics2D g = bufferedImage.createGraphics();
-        g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
-
-        ArrayList<String> wlines = new ArrayList<>();
-        ArrayList<Image> emojis = new ArrayList<>();
-        StringBuilder TempLine = new StringBuilder();
-
-        for (String word : arguments.split(" ")) {
-            if (word.endsWith(">") && word.startsWith("<")) {
-                word = word.replaceAll("(.*):", "");
-                word = word.replaceAll(">", "");
-                emojicount++;
-                try {
-                    emojis.add(ImageIO.read(new URL("https://cdn.discordapp.com/emojis/<EmojiID>.png".replace("<EmojiID>", word))));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                word = "$l";
-            }
-
-            if (g.getFontMetrics().stringWidth(String.valueOf(TempLine)) + g.getFontMetrics().stringWidth(word) > imgWidth * 1.01) {
-                if (TempLine.length() > 0)
-                    TempLine.setLength(TempLine.length() - 1);
-                wlines.add(String.valueOf(TempLine));
-                TempLine.delete(0, TempLine.length());
-                Lines++;
-            }
-            TempLine.append(word);
-            TempLine.append(" ");
-        }
-        TempLine.setLength(TempLine.length() - 1);
-        wlines.add(String.valueOf(TempLine));
-        g.dispose();
-        BufferedImage sentimage = new BufferedImage(imgWidth, (int) (imgHeight * 1.18 + Lines * g.getFontMetrics().getHeight()), BufferedImage.TYPE_INT_RGB);
-        g = sentimage.createGraphics();
-        g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
-        g.drawImage(bufferedImage, 0, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()), imgWidth, imgHeight, null);
+        int imgWidth = bufferedImage.getWidth(), imgHeight = bufferedImage.getHeight();
+        BufferedImage caption = captiononly(imgHeight,imgWidth,arguments);
+        BufferedImage sentimage = new BufferedImage(imgWidth, imgHeight + caption.getHeight() , BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = sentimage.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-        g.fillRect(0, 0, imgWidth, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()));
-        g.setColor(Color.black);
-        int liney = (int) (-g.getFontMetrics().getHeight() * 0.25), wwidths, emoji = -1;
-
-        for (String line : wlines) {
-            wwidths = (imgWidth - g.getFontMetrics().stringWidth(line)) / 2;
-            for (String word : line.split(" ")) {
-                if (word.equals("$l") && emoji + 1 != emojicount) {
-                    g.drawImage(emojis.get(emoji += 1), wwidths, liney + g.getFontMetrics().getHeight() / 3, (int) (g.getFontMetrics().getHeight() * 0.7), (int) (g.getFontMetrics().getHeight() * 0.7), null);
-                } else
-                    g.drawString(word, (wwidths), liney + g.getFontMetrics().getHeight());
-                wwidths += g.getFontMetrics().stringWidth(word + " ");
-            }
-            liney += g.getFontMetrics().getHeight();
-        }
+        g.drawImage(caption,0,0,null);
+        g.drawImage(bufferedImage, 0,caption.getHeight(), null);
 
         return sentimage;
     }
 
     private BufferedImage captiononly(int imgHeight,int imgWidth, String arguments){
-        int Lines = 1, emojicount = 0;
+        int Lines = 1, emojicount = 0,lettersize;
+        double lettersizeoffset = 0.15;
+        lettersize = Math.min(imgHeight, imgWidth);
         BufferedImage temp = new BufferedImage(imgWidth,imgHeight,BufferedImage.TYPE_INT_RGB);
         Graphics2D g = temp.createGraphics();
-        g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
+        g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (lettersize * lettersizeoffset)));
 
         ArrayList<String> wlines = new ArrayList<>();
         ArrayList<Image> emojis = new ArrayList<>();
         StringBuilder TempLine = new StringBuilder();
 
         for (String word : arguments.split(" ")) {
-            if (word.endsWith(">") && word.startsWith("<")) {
-                word = word.replaceAll("(.*):", "");
-                word = word.replaceAll(">", "");
+            Matcher matcher = pt_emoji.matcher(word);
+            if (matcher.matches()) {
                 emojicount++;
                 try {
-                    emojis.add(ImageIO.read(new URL("https://cdn.discordapp.com/emojis/<EmojiID>.png".replace("<EmojiID>", word))));
+                    emojis.add(ImageIO.read(new URL("https://cdn.discordapp.com/emojis/<EmojiID>.png".replace("<EmojiID>", matcher.group("id")))));
                 } catch (IOException e) {e.printStackTrace();}
                 word = "$l";
             }
 
             if (g.getFontMetrics().stringWidth(String.valueOf(TempLine)) + g.getFontMetrics().stringWidth(word) > imgWidth * 1.01) {
+                if (g.getFontMetrics().stringWidth(word) > imgWidth *1.02){
+                    String wordpart1 = word;
+                    do{
+                        wordpart1=wordpart1.substring(0,wordpart1.length()-1);
+                    }while (g.getFontMetrics().stringWidth(wordpart1) > imgWidth * 1.01);
+                    TempLine.append(wordpart1).append(" ");
+                    word = word.substring(wordpart1.length());
+                }
                 TempLine.setLength(TempLine.length() - 1);
                 wlines.add(String.valueOf(TempLine));
                 TempLine.delete(0, TempLine.length());
@@ -230,11 +270,11 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         g.dispose();
         BufferedImage argcaption = new BufferedImage(imgWidth,Lines * g.getFontMetrics().getHeight(), BufferedImage.TYPE_INT_RGB);
         g = argcaption.createGraphics();
-        g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (imgHeight * .15)));
+        g.setFont(new Font("Futura Extra Black Condensed", Font.PLAIN, (int) (lettersize * lettersizeoffset)));
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.fillRect(0, 0, imgWidth, (int) (imgHeight * .18 + Lines * g.getFontMetrics().getHeight()));
+        g.fillRect(0, 0, imgWidth, (int) ((lettersize * lettersizeoffset) + Lines * g.getFontMetrics().getHeight()));
         g.setColor(Color.black);
-        int liney = (int) (-g.getFontMetrics().getHeight() * 0.25), wwidths, emoji = -1;
+        int liney = (int) (-g.getFontMetrics().getHeight() * 0.21), wwidths, emoji = -1;
 
         for (String line : wlines) {
             wwidths = (imgWidth - g.getFontMetrics().stringWidth(line)) / 2;
