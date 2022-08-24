@@ -17,6 +17,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
@@ -97,7 +98,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                 fos.write(Mimg);
                 fos.close();
                 File jpgfile = File.createTempFile("to-jpg",".jpg");
-                ProcessBuilder processBuilder = new ProcessBuilder("ffmpeg","-y","-v","error","-i", webpfile.getAbsolutePath().replaceAll("\\\\","/"),jpgfile.getAbsolutePath().replaceAll("\\\\","/"));
+                ProcessBuilder processBuilder = new ProcessBuilder("ffmpeg","-y","-v","error","-i", webpfile.getAbsolutePath().replaceAll("\\\\","/"),"-crf 28","-threads 2",jpgfile.getAbsolutePath().replaceAll("\\\\","/"));
                 Process process;
                 process = processBuilder.start();
                 process.waitFor();
@@ -120,9 +121,11 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
         if (!message.getAttachments().isEmpty()) {
             MessageAttachment messageAttachment = message.getAttachments().get(0);
             if (messageAttachment.isImage() || messageAttachment.getFileName().matches(pt_vidextensions.pattern())) {
-                vidheight = messageAttachment.getHeight().orElse(200);
-                vidwidth = messageAttachment.getWidth().orElse(200);
-                leBytes = Optional.ofNullable(messageAttachment.downloadAsByteArray());
+                if (messageAttachment.getSize() < 10000000) {
+                    vidheight = messageAttachment.getHeight().orElse(200);
+                    vidwidth = messageAttachment.getWidth().orElse(200);
+                    leBytes = Optional.ofNullable(messageAttachment.downloadAsByteArray());
+                }
             }
         }
 
@@ -132,6 +135,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                     .filter(list -> !list.isEmpty())
                     .map(messageAttachments -> messageAttachments.get(0))
                     .filter(messageAttachment -> messageAttachment.isImage() || messageAttachment.getFileName().matches(pt_vidextensions.pattern()))
+                    .filter(messageAttachment -> messageAttachment.getSize() < 10000000)
                     .map(messageAttachment -> {
                         vidheight = messageAttachment.getHeight().orElse(200);
                         vidwidth = messageAttachment.getWidth().orElse(200);
@@ -147,6 +151,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                     .filter(list -> !list.isEmpty())
                     .map(messageAttachments -> messageAttachments.get(0))
                     .filter(messageAttachment -> messageAttachment.isImage() || messageAttachment.getFileName().matches(pt_vidextensions.pattern()))
+                    .filter(messageAttachment -> messageAttachment.getSize() < 10000000)
                     .map(messageAttachment -> {
                         vidheight = messageAttachment.getHeight().orElse(200);
                         vidwidth = messageAttachment.getWidth().orElse(200);
@@ -185,9 +190,11 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                         vidwidth = embedVideo.getWidth();
                         return embedVideo.getUrl();})
                     .map(URL -> {
-                        try (InputStream is = URL.openStream()){
-                            return CompletableFuture.completedFuture(is.readAllBytes());}
-                        catch (IOException e) {e.printStackTrace();}
+                        try {
+                            URLConnection connection = URL.openConnection();
+                            if (connection.getContentLength() < 10000000)
+                                return CompletableFuture.completedFuture(connection.getInputStream().readAllBytes());} catch (IOException e) {
+                            e.printStackTrace();}
                         return null;});
 
         else if (embed.flatMap(Embed::getProvider).map(EmbedProvider::getName).orElse("noprovider").equals("Tenor")) {
