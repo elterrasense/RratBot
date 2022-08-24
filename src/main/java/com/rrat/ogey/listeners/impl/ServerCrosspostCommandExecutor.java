@@ -153,8 +153,10 @@ public class ServerCrosspostCommandExecutor implements CommandExecutor,MessageCr
             else if (ev.getReaction().map(Reaction::containsYou).orElse(false) && msg.getAuthor().getIdAsString().equals(userID)) {
                 if (userID.equals(ev.getApi().getYourself().getIdAsString()))
                     return;
-                if ("✅".equals(reaction.asUnicodeEmoji().orElse(null)))
+                if ("✅".equals(reaction.asUnicodeEmoji().orElse(null))) {
                     sendmessage(msg, ev);
+                    ev.removeAllReactionsFromMessage();
+                }
                 else if ("❌".equals(reaction.asUnicodeEmoji().orElse(null)))
                     ev.removeReactionsByEmojiFromMessage("✅", "❌");
             }
