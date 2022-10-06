@@ -16,6 +16,8 @@ Repository for Rrat Bot
 
 !8ball [yes/no question] = Answers your question based on reliable sources (me).
 
+!roll [number] = Roll the die with a given number of faces.
+
 !facts [keyword] = Gives a response based on a keyword utilizing a Markov model that reads every text
 message it has ever seen.
 
