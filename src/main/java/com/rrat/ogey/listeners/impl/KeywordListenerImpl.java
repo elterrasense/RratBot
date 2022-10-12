@@ -27,7 +27,7 @@ public class KeywordListenerImpl implements KeywordListener {
 
                 //Once
                 Matcher matcherOnce = once.matcher(messageCreateEvent.getMessageContent());
-                if (matcherOnce.find()) {
+                if (matcherOnce.find() && Math.random() < 0.2 ) {
                     messageCreateEvent.getChannel()
                             .sendMessage(
                                     "Chúpala entonces");

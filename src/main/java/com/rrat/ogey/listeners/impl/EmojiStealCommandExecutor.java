@@ -41,7 +41,7 @@ public class EmojiStealCommandExecutor implements CommandExecutor {
                 try {
                     emojiBuilder.setName(emojiname)
                         .setImage(new URL(emojilink))
-                        .create();
+                        .create().thenRun(() -> event.addReactionsToMessage("✅"));
                 } catch (MalformedURLException e) {e.printStackTrace();}
             }
             else{
@@ -51,7 +51,7 @@ public class EmojiStealCommandExecutor implements CommandExecutor {
         if (reference.isPresent())
             for (StickerItem sticker : reference.get().getStickerItems())
                 if (sticker.getFormatType() == StickerFormatType.PNG || sticker.getFormatType() == StickerFormatType.APNG) {
-                    event.getChannel().sendMessage("https://media.discordapp.net/stickers/" + sticker.getIdAsString() + ".png");
+                    event.getChannel().sendMessage("https://cdn.discordapp.com/stickers/" + sticker.getIdAsString() + ".png");
                 }
 
     }
