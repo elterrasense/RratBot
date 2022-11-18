@@ -18,17 +18,16 @@ import java.util.Arrays;
 public class AddSpeechBubbleCommandExecutor implements CommandExecutor {
 
     @Override
-    //TODO: downloadAsByteArray() is no longer supported
     public void execute(MessageCreateEvent event, String arguments) {
         byte[] Mimg = new byte[0];
         if (!event.getMessageAttachments().isEmpty() && event.getMessageAttachments().get(0).isImage())
-            Mimg = event.getMessageAttachments().get(0).downloadAsByteArray().join();
+            Mimg = event.getMessageAttachments().get(0).asByteArray().join();
         else if (event.getMessage().getReferencedMessage().isPresent() && !event.getMessage().getReferencedMessage().get().getAttachments().isEmpty()
                 && event.getMessage().getReferencedMessage().get().getAttachments().get(0).isImage())
-            Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).downloadAsByteArray().join();
+            Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).asByteArray().join();
         else if (event.getMessage().getMessagesBefore(1).join().getNewestMessage().isPresent() && !event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().isEmpty()
                 && event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).isImage())
-            Mimg = event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).downloadAsByteArray().join();
+            Mimg = event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).asByteArray().join();
 
         if (Arrays.equals(Mimg, new byte[0]))
             return;
