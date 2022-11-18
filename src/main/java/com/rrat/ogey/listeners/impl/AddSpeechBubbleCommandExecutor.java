@@ -18,6 +18,7 @@ import java.util.Arrays;
 public class AddSpeechBubbleCommandExecutor implements CommandExecutor {
 
     @Override
+    //TODO: downloadAsByteArray() is no longer supported
     public void execute(MessageCreateEvent event, String arguments) {
         byte[] Mimg = new byte[0];
         if (!event.getMessageAttachments().isEmpty() && event.getMessageAttachments().get(0).isImage())

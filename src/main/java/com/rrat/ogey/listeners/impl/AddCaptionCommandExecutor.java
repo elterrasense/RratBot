@@ -124,6 +124,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                 if (messageAttachment.getSize() < 10000000) {
                     vidheight = messageAttachment.getHeight().orElse(200);
                     vidwidth = messageAttachment.getWidth().orElse(200);
+                    //TODO: downloadAsByteArray() is no longer supported
                     leBytes = Optional.ofNullable(messageAttachment.downloadAsByteArray());
                 }
             }
