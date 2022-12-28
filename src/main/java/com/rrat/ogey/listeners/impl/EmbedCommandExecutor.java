@@ -54,7 +54,7 @@ public class EmbedCommandExecutor implements MessageCreateListener, CommandExecu
     public void onMessageCreate(MessageCreateEvent ev) {
         String messagecontent = ev.getMessageContent();
 
-        if (status && serverid.equals(ev.getServer().map(Server::getIdAsString).orElse(null)) && ev.getMessageAuthor().isRegularUser()){
+        if (status && serverid.equals(ev.getServer().map(Server::getIdAsString).orElse(null)) && ev.getMessageAuthor().isRegularUser() && ev.getChannel().getType().isRegularServerChannelType()){
             Matcher matches = pt_discordlink.matcher(messagecontent);
             List<MatchResult> matchresults = matches.results().toList();
             if (matchresults.size() != 0) {

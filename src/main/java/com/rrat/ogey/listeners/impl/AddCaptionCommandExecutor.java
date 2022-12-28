@@ -8,6 +8,7 @@ import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.embed.Embed;
 import org.javacord.api.entity.message.embed.EmbedProvider;
 import org.javacord.api.entity.message.embed.EmbedThumbnail;
+import org.javacord.api.entity.message.mention.AllowedMentionsBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
 import su.dkzde.genki.*;
@@ -32,8 +33,9 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
     private static final Pattern pt_vidextensions = Pattern.compile(".*(?<extension>(\\.mp4)|(\\.mov)|(\\.webm))$");
     private static final Pattern pt_emoji = Pattern.compile("<(a)?:(?<name>\\w+):(?<id>\\d+)>");
-    private int vidwidth;
+    private boolean largefile = false;
     private int vidheight;
+    private int vidwidth;
 
     @Override
     public void execute(MessageCreateEvent event, String arguments) {
@@ -45,7 +47,13 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
         if (arguments == null || Arrays.equals(Mimg, new byte[0])) {
             if (arguments != null)
-                new MessageBuilder().append("Here is your caption bro")
+                if (largefile) {
+                    new MessageBuilder().append("File too large to process\nCaption: ").append(arguments)
+                            .replyTo(event.getMessage()).setAllowedMentions(new AllowedMentionsBuilder().setMentionUsers(false).setMentionRoles(false).setMentionEveryoneAndHere(false).build())
+                            .send(event.getChannel());
+                    largefile=false;
+                }else
+                    new MessageBuilder().append("Here is your caption bro")
                         .addAttachment(captiononly(500, 500, arguments), "Captionedimage.jpg")
                         .send(event.getChannel());
             return;
@@ -81,7 +89,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                 e.printStackTrace();
             }
         }
-        else if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) {
+        else if (Arrays.equals(Arrays.copyOf(Mimg, 3), new byte[]{71, 73, 70})) { //Checks if it's a .gif file
             try {
                 byte[] caption = captionGif(Mimg, arguments);
                 new MessageBuilder()
@@ -124,7 +132,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                 if (messageAttachment.getSize() < 10000000) {
                     vidheight = messageAttachment.getHeight().orElse(200);
                     vidwidth = messageAttachment.getWidth().orElse(200);
-                     leBytes = Optional.ofNullable(messageAttachment.asByteArray());
+                     leBytes = Optional.ofNullable(messageAttachment.downloadAsByteArray());
                 }
             }
         }
@@ -139,7 +147,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                     .map(messageAttachment -> {
                         vidheight = messageAttachment.getHeight().orElse(200);
                         vidwidth = messageAttachment.getWidth().orElse(200);
-                        return messageAttachment.asByteArray();});
+                        return messageAttachment.downloadAsByteArray();});
 
         if (leBytes.isEmpty())
             leBytes = getembed(event);
@@ -155,7 +163,7 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                     .map(messageAttachment -> {
                         vidheight = messageAttachment.getHeight().orElse(200);
                         vidwidth = messageAttachment.getWidth().orElse(200);
-                        return messageAttachment.asByteArray();});
+                        return messageAttachment.downloadAsByteArray();});
 
         return leBytes;
     }
@@ -174,41 +182,62 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
                     .filter(embeds -> !embeds.isEmpty())
                     .map(embeds -> embeds.get(0));
 
-        if (embed.map(Embed::getType).orElse("nothing").equals("image"))
-            return embed.flatMap(Embed::getThumbnail)
+        return embed.flatMap(this::downloadembed);
+    }
+
+    private Optional<CompletableFuture<byte[]>> downloadembed(Embed embed){
+
+        if (embed.getType().equals("image"))
+            return embed.getThumbnail()
                     .map(EmbedThumbnail::getProxyUrl)
                     .map(URL -> {
-                        try (InputStream is = URL.openStream()){
-                            return CompletableFuture.completedFuture(is.readAllBytes());}
+                        try {
+                            URLConnection connection = URL.openConnection();
+                            if (connection.getContentLength() < 10000000) {
+                                InputStream is = connection.getInputStream();
+                                return CompletableFuture.completedFuture(is.readAllBytes());
+                            } else {largefile = true;}
+                        }
                         catch (IOException e) {e.printStackTrace();}
                         return null;});
 
-        if (embed.map(Embed::getType).orElse("nothing").equals("video") && embed.flatMap(Embed::getUrl).map(URL::toString).orElse("nothing").matches("(https://)(cdn.discordapp.com|media.discordapp.net)/attachments/.*"))
-            return embed.flatMap(Embed::getVideo)
+        if (embed.getType().equals("video") && embed.getUrl().map(URL::toString).orElse("nothing").matches("(https://)(cdn.discordapp.com|media.discordapp.net)/attachments/.*"))
+            return embed.getVideo()
                     .map(embedVideo -> {
                         vidheight = embedVideo.getHeight();
                         vidwidth = embedVideo.getWidth();
                         return embedVideo.getUrl();})
                     .map(URL -> {
                         try {
+                            URL = new URL(URL.toString().replaceAll("media.discordapp.net","cdn.discordapp.com"));
                             URLConnection connection = URL.openConnection();
                             if (connection.getContentLength() < 10000000)
-                                return CompletableFuture.completedFuture(connection.getInputStream().readAllBytes());} catch (IOException e) {
+                                return CompletableFuture.completedFuture(connection.getInputStream().readAllBytes());
+                            else largefile=true;
+                        } catch (IOException e) {
                             e.printStackTrace();}
                         return null;});
 
-        else if (embed.flatMap(Embed::getProvider).map(EmbedProvider::getName).orElse("noprovider").equals("Tenor")) {
-            return embed.flatMap(Embed::getThumbnail)
+        else if (embed.getProvider().map(EmbedProvider::getName).orElse("noprovider").equals("Tenor")) {
+            return embed.getThumbnail()
                     .map(EmbedThumbnail::getProxyUrl)
                     .map(URL -> {
                         String tenor = URL.toString().replaceAll("(.*)com/", "");
                         tenor = tenor.replaceAll("/(.*)", "");
-                        tenor = tenor.substring(0, tenor.length() - 1).concat("d"); //"d" for lower res, "C" for higher res
+                        tenor = tenor.substring(0, tenor.length() - 1).concat("d"); //"d" for lower res, "C" for higher res, "E", "a"
                         tenor = "https://media.tenor.com/".concat(tenor);
                         return tenor;})
                     .map(String -> {
-                        try (InputStream is = new URL(String).openStream()){
-                            return CompletableFuture.completedFuture(is.readAllBytes());
+                        try {
+                            URLConnection connection = new URL(String).openConnection();
+                            if (connection.getContentLength() < 10000000)
+                                return CompletableFuture.completedFuture(connection.getInputStream().readAllBytes());
+                            else{
+                                connection = new URL(String.substring(0,String.length()-1).concat("E")).openConnection();
+                                if (connection.getContentLength() < 10000000)
+                                    return CompletableFuture.completedFuture(connection.getInputStream().readAllBytes());
+                            }
+                            largefile=true;
                         } catch (IOException e) {e.printStackTrace();}
                         return null;
                     });
@@ -391,18 +420,23 @@ public class AddCaptionCommandExecutor implements CommandExecutor {
 
     private int[][] CalculateLineIndexes(byte[] colors, BufferedImage image) {
         int[][] line = new int[image.getHeight()][image.getWidth()];
+        int[] blues = new int[256];
+        int[] greens = new int[256];
+        int[] reds = new int[256];
+
+        for (int i = 0; i < colors.length / 3; i++) {
+            blues[i] = Byte.toUnsignedInt(colors[3 * i + 2]);
+            greens[i] = Byte.toUnsignedInt(colors[3 * i + 1]);
+            reds[i] = Byte.toUnsignedInt(colors[3 * i]);
+        }
 
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int color = image.getRGB(x, y), index = 0;
                 int blue = color & 0xff, green = (color & 0xff00) >> 8, red = (color & 0xff0000) >> 16;
-                int iblue = Byte.toUnsignedInt(colors[2]), igreen = Byte.toUnsignedInt(colors[1]), ired = Byte.toUnsignedInt(colors[0]);
-                double d = Math.pow((red - ired * 0.30), 2) + Math.pow(((green - igreen) * 0.59), 2) + Math.pow(((blue - iblue) * 0.11), 2);
+                double d = Math.pow((red - reds[0] ), 2)* 0.30 + Math.pow(((green - greens[0]) ), 2)* 0.59 + Math.pow(((blue - blues[0]) ), 2)* 0.11;
                 for (int i = 1; i < colors.length / 3; i++) {
-                    iblue = Byte.toUnsignedInt(colors[3 * i + 2]);
-                    igreen = Byte.toUnsignedInt(colors[3 * i + 1]);
-                    ired = Byte.toUnsignedInt(colors[3 * i]);
-                    double id = Math.pow((red - ired * 0.30), 2) + Math.pow(((green - igreen) * 0.59), 2) + Math.pow(((blue - iblue) * 0.11), 2);
+                    double id = Math.pow((red - reds[i] ), 2)* 0.30 + Math.pow(((green - greens[i]) ), 2)* 0.59 + Math.pow(((blue - blues[i]) ), 2)* 0.11;
                     if (d > id) {
                         d = id;
                         index = i;
