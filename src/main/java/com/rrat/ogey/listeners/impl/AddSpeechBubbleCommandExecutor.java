@@ -21,13 +21,13 @@ public class AddSpeechBubbleCommandExecutor implements CommandExecutor {
     public void execute(MessageCreateEvent event, String arguments) {
         byte[] Mimg = new byte[0];
         if (!event.getMessageAttachments().isEmpty() && event.getMessageAttachments().get(0).isImage())
-            Mimg = event.getMessageAttachments().get(0).asByteArray().join();
+            Mimg = event.getMessageAttachments().get(0).downloadAsByteArray().join();
         else if (event.getMessage().getReferencedMessage().isPresent() && !event.getMessage().getReferencedMessage().get().getAttachments().isEmpty()
                 && event.getMessage().getReferencedMessage().get().getAttachments().get(0).isImage())
-            Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).asByteArray().join();
+            Mimg = event.getMessage().getReferencedMessage().get().getAttachments().get(0).downloadAsByteArray().join();
         else if (event.getMessage().getMessagesBefore(1).join().getNewestMessage().isPresent() && !event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().isEmpty()
                 && event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).isImage())
-            Mimg = event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).asByteArray().join();
+            Mimg = event.getMessage().getMessagesBefore(1).join().getNewestMessage().get().getAttachments().get(0).downloadAsByteArray().join();
 
         if (Arrays.equals(Mimg, new byte[0]))
             return;
