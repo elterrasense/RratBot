@@ -7,13 +7,14 @@ import java.util.function.Consumer;
 import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
 
-public final class MarkovModel implements Serializable {
+public final class MarkovModel implements GenericMarkov {
     @Serial private static final long serialVersionUID = 1L;
 
     public static MarkovModel withNGramLength(int length) {
         return new MarkovModel(length);
     }
 
+    @Override
     public void update(List<String> tokens) {
         if (tokens.size() > ngramLength) {
 
@@ -34,11 +35,13 @@ public final class MarkovModel implements Serializable {
         }
     }
 
+    @Override
     public Optional<List<String>> generate(RandomGenerator rng) {
         return pickNGram(rng)
                 .map(ngram -> generate(rng, ngram));
     }
 
+    @Override
     public Optional<List<String>> generate(String token, RandomGenerator rng) {
         return pickNGram(token, rng)
                 .map(ngram -> generate(rng, ngram));

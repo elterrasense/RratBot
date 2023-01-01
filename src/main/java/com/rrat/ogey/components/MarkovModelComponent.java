@@ -1,21 +1,23 @@
 package com.rrat.ogey.components;
 
+import com.rrat.ogey.model.AgingMarkov;
 import com.rrat.ogey.model.AnnotateTokenizer;
-import com.rrat.ogey.model.MarkovModel;
+import com.rrat.ogey.model.GenericMarkov;
 import com.rrat.ogey.model.MarkovModels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.lang.Nullable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,8 +31,9 @@ public class MarkovModelComponent {
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private MarkovModel model;
-    private MarkovModel nabe;
+
+    private GenericMarkov model;
+    private GenericMarkov nabe;
 
     @Autowired
     private Environment env;
@@ -42,7 +45,7 @@ public class MarkovModelComponent {
 
         this.model = Objects.requireNonNullElseGet(
                 loadPersistentMarkov(),
-                () -> MarkovModel.withNGramLength(2));
+                () -> AgingMarkov.withNGramLength(2));
 
         this.scheduler.scheduleAtFixedRate(
                 () -> executor.execute(this::savePersistentMarkov),
@@ -54,6 +57,24 @@ public class MarkovModelComponent {
     private void preDestroy() {
         executor.shutdownNow();
         scheduler.shutdownNow();
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    public void scheduledPrune() {
+        final Instant retain; {
+            int days; it: {
+                String retainPeriodDays = env.getProperty("markov.ngramRetainPeriodDays");
+                if (retainPeriodDays != null) try {
+                    days = Integer.parseInt(retainPeriodDays);
+                    break it;
+                } catch (NumberFormatException ignore) {}
+                days = 2 * 7;
+            }
+            retain = Instant.from(ZonedDateTime.now().minusDays(days));
+        }
+        if (model instanceof AgingMarkov markov) {
+            markov.prune(retain);
+        }
     }
 
     public void updateModelAsync(List<String> textTokens) {
@@ -115,13 +136,7 @@ public class MarkovModelComponent {
         return CompletableFuture.supplyAsync(supplier, executor);
     }
 
-    public CompletableFuture<Optional<String>> generateQuote() {
-        Supplier<Optional<String>> supplier = () ->
-                model.generateQuote(ThreadLocalRandom.current()).map(this::gather);
-        return CompletableFuture.supplyAsync(supplier, executor);
-    }
-
-    private @Nullable MarkovModel loadPersistentMarkov() {
+    private @Nullable GenericMarkov loadPersistentMarkov() {
         Path file = getModelObjectFilepath();
         try {
             return MarkovModels.load(file);
@@ -145,7 +160,7 @@ public class MarkovModelComponent {
         if (customFilepath != null) {
             return Paths.get(customFilepath);
         } else {
-            return Paths.get(System.getProperty("user.home"), ".markov-chain.obj");
+            return Paths.get(System.getProperty("user.home"), ".aging-markov-chain.obj");
         }
     }
 
