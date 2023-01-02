@@ -8,7 +8,6 @@ import com.rrat.ogey.model.AnnotatedToken;
 import com.rrat.ogey.model.AnnotatedTokens;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.channel.Channel;
-import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.MessageAuthor;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
@@ -45,7 +44,7 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                     if (maybeSentence.isPresent()) {
                         ev.getChannel().sendMessage(maybeSentence.get());
                     } else {
-                        ev.getChannel().sendMessage("I know no facts yet");
+                        ev.getChannel().sendMessage("huh?");
                     }
                 });
             }
@@ -55,7 +54,7 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                     if (maybeSentence.isPresent()) {
                         ev.getChannel().sendMessage(maybeSentence.get());
                     } else {
-                        ev.getChannel().sendMessage("I know nothing about '" + word + "'");
+                        ev.getChannel().sendMessage(word + "?");
                     }
                 });
             }
@@ -65,7 +64,7 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
                     if (maybeSentence.isPresent()) {
                         ev.getChannel().sendMessage(maybeSentence.get());
                     } else {
-                        ev.getChannel().sendMessage("I know nothing about '" + query + "'");
+                        ev.getChannel().sendMessage(query + "?");
                     }
                 });
             }

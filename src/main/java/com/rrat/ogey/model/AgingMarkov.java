@@ -85,11 +85,15 @@ public final class AgingMarkov implements GenericMarkov {
 
     private Optional<NGram> pick(RandomGenerator rng, Predicate<NGram> predicate) {
         if (nodes.isEmpty()) return Optional.empty();
-        return Stream.generate(nodes::keySet)
-                .flatMap(Collection::stream)
-                .filter(predicate)
-                .skip(rng.nextInt(nodes.size())) // This introduces modulo-bias. Unfortunately I don't care.
-                .findAny();
+        if (nodes.keySet().stream().anyMatch(predicate)) {
+            return Stream.generate(nodes::keySet)
+                    .flatMap(Collection::stream)
+                    .filter(predicate)
+                    .skip(rng.nextInt(nodes.size())) // This introduces modulo-bias. Unfortunately I don't care.
+                    .findAny();
+        } else {
+            return Optional.empty();
+        }
     }
 
     private List<String> traverse(RandomGenerator rng, NGram start) {
