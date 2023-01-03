@@ -73,7 +73,7 @@ public class MarkovModelComponent {
             retain = Instant.from(ZonedDateTime.now().minusDays(days));
         }
         if (model instanceof AgingMarkov markov) {
-            markov.prune(retain);
+            executor.execute(() -> markov.prune(retain));
         }
     }
 
