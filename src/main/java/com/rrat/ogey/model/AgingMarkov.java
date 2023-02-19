@@ -9,14 +9,13 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * Modification of {@link MarkovModel} with support of aging links within the graph.
  * It should forget and remove n-grams inserted after a certain date.
  */
 public final class AgingMarkov implements GenericMarkov {
-    @Serial private static final long serialVersionUID = 2L;
+    @Serial private static final long serialVersionUID = 3L;
 
     public static AgingMarkov withNGramLength(int length) {
         return new AgingMarkov(length);
@@ -46,30 +45,35 @@ public final class AgingMarkov implements GenericMarkov {
 
     private void insert(Instant now, NGram source, @Nullable NGram target) {
         final Node node; {
-            Node found = nodes.get(source);
+            Node found = gram.get(source);
             if (found == null) {
                 node = new Node(now, source);
-                nodes.put(source, node);
+                nodes.put(node.id, node);
+                gram.put(source, node);
             } else {
                 node = found;
                 found.updated = now;
             }
         }
         if (target == null) {
-            node.links.addLast(new Link(now, null));
+            Link link = new Link(now, null);
+            links.put(link.id, link);
+            node.linkIds.addLast(link.id);
         } else {
-            final Node t;
-            {
-                Node found = nodes.get(target);
+            final Node t; {
+                Node found = gram.get(target);
                 if (found == null) {
                     t = new Node(now, target);
-                    nodes.put(target, t);
+                    nodes.put(t.id, t);
+                    gram.put(target, t);
                 } else {
                     t = found;
                     t.updated = now;
                 }
             }
-            node.links.addLast(new Link(now, t));
+            Link link = new Link(now, t.id);
+            links.put(link.id, link);
+            node.linkIds.addLast(link.id);
         }
     }
 
@@ -85,30 +89,34 @@ public final class AgingMarkov implements GenericMarkov {
 
     private Optional<NGram> pick(RandomGenerator rng, Predicate<NGram> predicate) {
         if (nodes.isEmpty()) return Optional.empty();
-        if (nodes.keySet().stream().anyMatch(predicate)) {
-            return Stream.generate(nodes::keySet)
-                    .flatMap(Collection::stream)
-                    .filter(predicate)
-                    .skip(rng.nextInt(nodes.size())) // This introduces modulo-bias. Unfortunately I don't care.
-                    .findAny();
-        } else {
-            return Optional.empty();
-        }
+        List<Node> pick = nodes.values()
+                .stream()
+                .filter(node -> predicate.test(node.self))
+                .toList();
+
+        if (pick.isEmpty()) return Optional.empty();
+        Node picked = pick.get(rng.nextInt(pick.size()));
+        return Optional.of(picked.self);
     }
 
     private List<String> traverse(RandomGenerator rng, NGram start) {
         ArrayList<String> tokens = new ArrayList<>();
         Collections.addAll(tokens, start.tokens);
-        Node node = nodes.get(start);
+        Node node = gram.get(start);
         while (true) {
             if (node == null) {
                 return tokens;
             }
-            if (node.links.isEmpty()) {
+            if (node.linkIds.isEmpty()) {
                 return tokens;
             }
-            Link link = node.links.get(rng.nextInt(node.links.size()));
-            node = link.target;
+            UUID lid = node.linkIds.get(rng.nextInt(node.linkIds.size()));
+            Link link = links.get(lid);
+            if (link == null) {
+                return tokens;
+            }
+            UUID nid = link.targetNodeId;
+            node = nodes.get(nid);
             if (node != null) {
                 tokens.add(node.self.tokens[node.self.tokens.length - 1]);
             }
@@ -117,38 +125,57 @@ public final class AgingMarkov implements GenericMarkov {
 
     /** Removes links and nodes older than retain date. */
     public void prune(Instant retain) {
-        Collection<NGram> ngrams = new ArrayList<>(nodes.keySet());
-        for (NGram ngram : ngrams) {
-            Node node = nodes.get(ngram);
-            node.links.removeIf(link -> link.ts.isBefore(retain));
-            if (node.updated.isBefore(retain)) {
-                nodes.remove(ngram);
+        { // Prune links;
+            Collection<UUID> ids = new ArrayList<>(links.keySet());
+            for (UUID lid : ids) {
+                Link link = links.get(lid);
+                if (link.ts.isBefore(retain)) {
+                    links.remove(lid);
+                }
+            }
+        }
+        { // Prune nodes;
+            Collection<UUID> ids = new ArrayList<>(nodes.keySet());
+            for (UUID nid : ids) {
+                Node node = nodes.get(nid);
+                node.linkIds.removeIf(id -> !links.containsKey(id));
+                if (node.updated.isBefore(retain)) {
+                    nodes.remove(nid);
+                }
+            }
+        }
+        { // Prune nGram map;
+            Collection<Node> cached = new ArrayList<>(gram.values());
+            for (Node node : cached) {
+                if (!nodes.containsKey(node.id)) {
+                    gram.remove(node.self);
+                }
             }
         }
     }
 
     private final int ngramLength;
-    private final HashMap<NGram, Node> nodes = new HashMap<>();
-
-    private AgingMarkov(int length) {
-        this.ngramLength = length;
-    }
+    private final HashMap<UUID, Link> links = new HashMap<>();
+    private final HashMap<UUID, Node> nodes = new HashMap<>();
+    private final HashMap<NGram, Node> gram = new HashMap<>();
 
     private static final class Link implements Serializable {
-        @Serial private static final long serialVersionUID = 2L;
+        @Serial private static final long serialVersionUID = 3L;
         private final Instant ts;
-        private final @Nullable Node target;
-        private Link(Instant ts, @Nullable Node target) {
+        private final @Nullable UUID targetNodeId;
+        private final UUID id = UUID.randomUUID();
+        private Link(Instant ts, @Nullable UUID targetNodeId) {
             this.ts = ts;
-            this.target = target;
+            this.targetNodeId = targetNodeId;
         }
     }
 
     private static final class Node implements Serializable {
-        @Serial private static final long serialVersionUID = 2L;
+        @Serial private static final long serialVersionUID = 3L;
         private Instant updated;
         private final NGram self;
-        private final LinkedList<Link> links = new LinkedList<>();
+        private final LinkedList<UUID> linkIds = new LinkedList<>();
+        private final UUID id = UUID.randomUUID();
         private Node(Instant updated, NGram self) {
             this.updated = updated;
             this.self = self;
@@ -194,4 +221,7 @@ public final class AgingMarkov implements GenericMarkov {
         }
     }
 
+    private AgingMarkov(int length) {
+        this.ngramLength = length;
+    }
 }
