@@ -2,8 +2,11 @@ package com.rrat.ogey.listeners.impl;
 
 import com.rrat.ogey.listeners.BotCommand;
 import com.rrat.ogey.listeners.CommandExecutor;
+import org.javacord.api.entity.message.MessageBuilder;
+import org.javacord.api.entity.message.mention.AllowedMentionsBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.stereotype.Component;
+
 import java.text.DecimalFormat;
 import java.util.Random;
 
@@ -17,8 +20,11 @@ public class CockRateCommandExecutor implements CommandExecutor {
             //Get a length from 1 cm to 25 cm then convert it to imperial
             double lengthCm = 10 + 10 * (new Random(arguments.hashCode()).nextDouble());
             double lengthInch = lengthCm * 0.394;
-            event.getChannel().sendMessage(arguments + "'s" + " cock is " + df.format(lengthCm) + " cm/"
-                    + df.format(lengthInch) + " inches long");
+            AllowedMentionsBuilder allowedMentions = new AllowedMentionsBuilder();
+            allowedMentions.setMentionEveryoneAndHere(false).setMentionRoles(false).setMentionUsers(false);
+            MessageBuilder message = new MessageBuilder();
+            message.setAllowedMentions(allowedMentions.build()).append(arguments + "'s" + " cock is " + df.format(lengthCm) + " cm/"
+                    + df.format(lengthInch) + " inches long").send(event.getChannel());
         } else {
             event.getChannel().sendMessage("Incorrect syntax, are you trying to use `!cockrate [thing]`?");
         }
