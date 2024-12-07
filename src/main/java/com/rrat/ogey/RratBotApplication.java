@@ -54,7 +54,7 @@ public class RratBotApplication {
 	public DiscordApi discordApi(){
 		String token = env.getProperty("TOKEN");
 		//Set token and check login and join
-		DiscordApi api = new DiscordApiBuilder().setToken(token).setAllNonPrivilegedIntents().login().join();
+		DiscordApi api = new DiscordApiBuilder().setToken(token).setAllIntents().login().join();
 		//Set activity
 		api.updateActivity(ActivityType.PLAYING, "Apex Legends");
 

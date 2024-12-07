@@ -75,7 +75,7 @@ public class FactsCommandExecutor implements CommandExecutor, MessageCreateListe
     public void onMessageCreate(MessageCreateEvent ev) {
         String channelId = ev.getChannel().getIdAsString();
         MessageAuthor author = ev.getMessageAuthor();
-        if (!author.isBotUser() && (channelId.equals("743177080258429020") || channelId.equals("823777446422773822"))) {
+        if (!author.isBotUser() && (channelId.equals("1296794494288662629") || channelId.equals("823777446422773822"))) {
             String content = ev.getMessageContent();
             if (!content.startsWith("!")) {
                 AnnotateTokenizer tokenizer = AnnotateTokenizer.instance();
